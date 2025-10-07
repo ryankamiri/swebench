@@ -105,8 +105,17 @@ class WandbLogger:
         else:
             self.metrics["error_instances"] += 1
         
+        # Extract detailed test information
+        test_results = report.get("test_results", {})
+        FAIL_TO_PASS = test_results.get("FAIL_TO_PASS", [])
+        PASS_TO_PASS = test_results.get("PASS_TO_PASS", [])
+        
+        # Extract patch application info
+        patch_applied = report.get("patch_applied", False)
+        patch_apply_error = report.get("patch_apply_error", "")
+        
         # Log to wandb
-        wandb.log({
+        log_data = {
             "instance_id": instance_id,
             "status": status,
             "completed_instances": self.metrics["completed_instances"],
@@ -114,7 +123,36 @@ class WandbLogger:
             "failed_instances": self.metrics["failed_instances"],
             "error_instances": self.metrics["error_instances"],
             "pass_rate": self.metrics["passed_instances"] / max(1, self.metrics["completed_instances"]),
-        })
+            
+            # Patch application status
+            f"{instance_id}/patch_applied": patch_applied,
+            
+            # Test results
+            f"{instance_id}/fail_to_pass_count": len(FAIL_TO_PASS) if FAIL_TO_PASS else 0,
+            f"{instance_id}/pass_to_pass_count": len(PASS_TO_PASS) if PASS_TO_PASS else 0,
+            f"{instance_id}/total_tests": test_results.get("num_tests", 0),
+            f"{instance_id}/failed_tests": test_results.get("num_failed", 0),
+            f"{instance_id}/passed_tests": test_results.get("num_passed", 0),
+        }
+        
+        wandb.log(log_data)
+        
+        # Log patch apply error if exists
+        if patch_apply_error:
+            wandb.log({
+                f"{instance_id}/patch_apply_error": wandb.Html(f"<pre>{patch_apply_error}</pre>")
+            })
+        
+        # Log test details
+        if FAIL_TO_PASS:
+            wandb.log({
+                f"{instance_id}/fail_to_pass_tests": wandb.Html(f"<pre>{json.dumps(FAIL_TO_PASS, indent=2)}</pre>")
+            })
+        
+        if PASS_TO_PASS:
+            wandb.log({
+                f"{instance_id}/pass_to_pass_tests": wandb.Html(f"<pre>{json.dumps(PASS_TO_PASS, indent=2)}</pre>")
+            })
     
     def log_final_results(self, reports: List[Dict]):
         """Log final evaluation results."""
@@ -150,16 +188,32 @@ class WandbLogger:
         """Create a summary table in wandb."""
         table_data = []
         for report in reports:
+            test_results = report.get("test_results", {})
+            FAIL_TO_PASS = test_results.get("FAIL_TO_PASS", [])
+            PASS_TO_PASS = test_results.get("PASS_TO_PASS", [])
+            
             table_data.append([
                 report.get("instance_id", "unknown"),
                 report.get("status", "UNKNOWN"),
-                report.get("test_results", {}).get("num_tests", 0),
-                report.get("test_results", {}).get("num_failed", 0),
-                report.get("test_results", {}).get("num_passed", 0),
+                "✓" if report.get("patch_applied", False) else "✗",
+                len(FAIL_TO_PASS) if FAIL_TO_PASS else 0,
+                len(PASS_TO_PASS) if PASS_TO_PASS else 0,
+                test_results.get("num_tests", 0),
+                test_results.get("num_failed", 0),
+                test_results.get("num_passed", 0),
             ])
         
         table = wandb.Table(
-            columns=["Instance ID", "Status", "Total Tests", "Failed Tests", "Passed Tests"],
+            columns=[
+                "Instance ID", 
+                "Status", 
+                "Patch Applied",
+                "F2P Tests",
+                "P2P Tests",
+                "Total Tests", 
+                "Failed Tests", 
+                "Passed Tests"
+            ],
             data=table_data
         )
         

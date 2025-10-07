@@ -103,7 +103,7 @@ class QwenInference:
         repo_content: str,
         hints_text: str = "",
         max_new_tokens: int = 2048,
-    ) -> str:
+    ) -> tuple[str, dict]:
         """
         Generate a patch for the given problem statement.
         
@@ -114,7 +114,7 @@ class QwenInference:
             max_new_tokens: Maximum number of new tokens to generate
             
         Returns:
-            Generated patch as string
+            Tuple of (patch, metadata) where metadata contains raw and cleaned completions
         """
         # Construct the prompt
         prompt = self._construct_prompt(problem_statement, repo_content, hints_text)
@@ -141,16 +141,25 @@ class QwenInference:
                 repetition_penalty=1.1,
             )
         
-        # Decode response
-        generated_text = self.tokenizer.decode(
+        # Decode response (raw completion)
+        raw_completion = self.tokenizer.decode(
             outputs[0][inputs['input_ids'].shape[1]:],
             skip_special_tokens=True
         )
         
-        # Extract patch from generated text
-        patch = self._extract_patch(generated_text)
+        # Extract patch from generated text (cleaned completion)
+        patch = self._extract_patch(raw_completion)
         
-        return patch
+        # Create metadata
+        metadata = {
+            "raw_completion": raw_completion,
+            "cleaned_completion": patch,
+            "prompt_length": len(prompt),
+            "raw_completion_length": len(raw_completion),
+            "patch_length": len(patch),
+        }
+        
+        return patch, metadata
     
     def _construct_prompt(
         self,
@@ -235,7 +244,7 @@ Please generate a patch that fixes this problem. The patch should be in unified 
         
         # Filter dataset if needed
         if instance_ids:
-            dataset = [inst for inst in dataset if inst.instance_id in instance_ids]
+            dataset = [inst for inst in dataset if inst.get('instance_id', inst.get('id')) in instance_ids]
             logger.info(f"Filtered to {len(dataset)} instances")
         
         if max_instances:
@@ -245,20 +254,39 @@ Please generate a patch that fixes this problem. The patch should be in unified 
         predictions = []
         
         for i, instance in enumerate(dataset):
-            logger.info(f"Processing instance {i+1}/{len(dataset)}: {instance.instance_id}")
+            # Handle both dict and object formats
+            if isinstance(instance, dict):
+                instance_id = instance.get('instance_id', instance.get('id'))
+                problem_statement = instance.get('problem_statement', instance.get('text', ''))
+                repo_content = instance.get('repo_content', '')
+                hints_text = instance.get('hints_text', '')
+            else:
+                instance_id = instance.instance_id
+                problem_statement = instance.problem_statement
+                repo_content = getattr(instance, 'repo_content', '')
+                hints_text = getattr(instance, 'hints_text', '')
+            
+            logger.info(f"Processing instance {i+1}/{len(dataset)}: {instance_id}")
             
             try:
                 # Generate patch
-                patch = self.generate_patch(
-                    problem_statement=instance.problem_statement,
-                    repo_content=getattr(instance, 'repo_content', ''),
-                    hints_text=getattr(instance, 'hints_text', ''),
+                patch, metadata = self.generate_patch(
+                    problem_statement=problem_statement,
+                    repo_content=repo_content,
+                    hints_text=hints_text,
                 )
                 
+                # Log raw and cleaned completions
+                logger.info(f"[{instance_id}] Raw completion length: {metadata['raw_completion_length']} chars")
+                logger.info(f"[{instance_id}] Cleaned patch length: {metadata['patch_length']} chars")
+                logger.info(f"[{instance_id}] Raw completion preview: {metadata['raw_completion']}...")
+                logger.info(f"[{instance_id}] Cleaned patch preview: {metadata['cleaned_completion']}...")
+                
                 prediction = {
-                    "instance_id": instance.instance_id,
+                    "instance_id": instance_id,
                     "model_name_or_path": self.model_name,
                     "model_patch": patch,
+                    "metadata": metadata,
                 }
                 
                 predictions.append(prediction)
@@ -266,17 +294,25 @@ Please generate a patch that fixes this problem. The patch should be in unified 
                 # Log to wandb
                 if wandb.run is not None:
                     wandb.log({
-                        "instance_id": instance.instance_id,
+                        "instance_id": instance_id,
                         "patch_length": len(patch),
+                        "raw_completion_length": metadata['raw_completion_length'],
+                        "prompt_length": metadata['prompt_length'],
                         "progress": i + 1,
                         "total_instances": len(dataset),
                     })
+                    
+                    # Log detailed completion info as artifact
+                    wandb.log({
+                        f"completions/{instance_id}/raw": wandb.Html(f"<pre>{metadata['raw_completion']}</pre>"),
+                        f"completions/{instance_id}/cleaned": wandb.Html(f"<pre>{metadata['cleaned_completion']}</pre>"),
+                    })
                 
             except Exception as e:
-                logger.error(f"Error processing {instance.instance_id}: {e}")
+                logger.error(f"Error processing {instance_id}: {e}")
                 # Add failed prediction
                 predictions.append({
-                    "instance_id": instance.instance_id,
+                    "instance_id": instance_id,
                     "model_name_or_path": self.model_name,
                     "model_patch": "",
                 })
