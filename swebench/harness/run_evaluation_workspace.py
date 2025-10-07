@@ -20,6 +20,7 @@ from swebench.harness.constants import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
+    SWEbenchInstance,
 )
 from swebench.harness.test_spec.test_spec import make_test_spec, TestSpec
 from swebench.harness.utils import (
@@ -83,27 +84,27 @@ class WorkspaceEvaluator:
         
         return str(sif_path)
     
-    def _get_repo_workspace(self, test_spec: TestSpec) -> Path:
+    def _get_repo_workspace(self, instance: SWEbenchInstance) -> Path:
         """Get or create a workspace for a repository."""
-        repo_name = test_spec.repo.replace('/', '_')
+        repo_name = instance['repo'].replace('/', '_')
         repo_dir = self.workspace_dir / repo_name
         
         if not repo_dir.exists():
-            logger.info(f"Cloning {test_spec.repo}...")
+            logger.info(f"Cloning {instance['repo']}...")
             result = subprocess.run(
-                ["git", "clone", f"https://github.com/{test_spec.repo}.git", str(repo_dir)],
+                ["git", "clone", f"https://github.com/{instance['repo']}.git", str(repo_dir)],
                 capture_output=True,
                 text=True,
                 timeout=300
             )
             if result.returncode != 0:
-                raise RuntimeError(f"Failed to clone {test_spec.repo}: {result.stderr}")
+                raise RuntimeError(f"Failed to clone {instance['repo']}: {result.stderr}")
         
         # Checkout the correct commit
         subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=repo_dir, capture_output=True)
         subprocess.run(["git", "clean", "-fdx"], cwd=repo_dir, capture_output=True)
         result = subprocess.run(
-            ["git", "checkout", "-f", test_spec.base_commit],
+            ["git", "checkout", "-f", instance['base_commit']],
             cwd=repo_dir,
             capture_output=True,
             text=True,
@@ -111,7 +112,7 @@ class WorkspaceEvaluator:
         )
         
         if result.returncode != 0:
-            raise RuntimeError(f"Failed to checkout {test_spec.base_commit}: {result.stderr}")
+            raise RuntimeError(f"Failed to checkout {instance['base_commit']}: {result.stderr}")
         
         return repo_dir
     
@@ -152,14 +153,12 @@ class WorkspaceEvaluator:
     
     def _run_tests(self, test_spec: TestSpec, repo_dir: Path) -> tuple[str, str]:
         """Run tests in the workspace."""
-        # Create a simple test script
-        test_cmd = test_spec.test_cmd or "python -m pytest"
-        
+        # Use the eval_script from test_spec which contains the test commands
         test_script = f"""#!/bin/bash
 set -euo pipefail
 cd {repo_dir}
 echo "===START_TEST_OUTPUT==="
-{test_cmd}
+{test_spec.eval_script}
 echo "===END_TEST_OUTPUT==="
 """
         
@@ -186,16 +185,16 @@ echo "===END_TEST_OUTPUT==="
         os.remove(script_path)
         return result.stdout, result.stderr
     
-    def evaluate_instance(self, test_spec: TestSpec, prediction: Dict) -> Dict:
+    def evaluate_instance(self, instance: SWEbenchInstance, test_spec: TestSpec, prediction: Dict) -> Dict:
         """Evaluate a single instance."""
-        instance_id = test_spec.instance_id
+        instance_id = instance[KEY_INSTANCE_ID]
         patch = prediction.get(KEY_PREDICTION, "")
         
         logger.info(f"Evaluating {instance_id}...")
         
         try:
             # Get workspace
-            repo_dir = self._get_repo_workspace(test_spec)
+            repo_dir = self._get_repo_workspace(instance)
             
             # Apply patch
             patch_applied = self._apply_patch(patch, repo_dir)
@@ -256,20 +255,22 @@ def run_evaluation_workspace(
     """
     # Load predictions
     logger.info(f"Loading predictions from {predictions_path}")
-    predictions = get_predictions_from_file(predictions_path)
+    predictions = get_predictions_from_file(predictions_path, dataset_name or "unknown", "test")
     logger.info(f"Loaded {len(predictions)} predictions")
     
     # Load dataset if not provided
     if dataset is None:
         logger.info(f"Loading dataset {dataset_name}")
-        dataset = load_swebench_dataset(dataset_name)
+        dataset = load_swebench_dataset(dataset_name, split="test")
         logger.info(f"Loaded {len(dataset)} instances from dataset")
     
-    # Create test specs
-    test_specs = {
-        spec.instance_id: spec
-        for spec in [make_test_spec(instance) for instance in dataset]
-    }
+    # Create test specs and instance mapping
+    test_specs = {}
+    instances_map = {}
+    for instance in dataset:
+        instance_id = instance[KEY_INSTANCE_ID]
+        test_specs[instance_id] = make_test_spec(instance)
+        instances_map[instance_id] = instance
     
     # Initialize evaluator
     evaluator = WorkspaceEvaluator(workspace_dir=workspace_dir)
@@ -284,8 +285,9 @@ def run_evaluation_workspace(
             logger.warning(f"No test spec found for {instance_id}")
             continue
         
+        instance = instances_map[instance_id]
         test_spec = test_specs[instance_id]
-        result = evaluator.evaluate_instance(test_spec, pred)
+        result = evaluator.evaluate_instance(instance, test_spec, pred)
         results.append(result)
         
         # Save intermediate results
