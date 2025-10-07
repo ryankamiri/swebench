@@ -8,6 +8,7 @@ and managing container images.
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import sys
 import traceback
@@ -142,12 +143,24 @@ def build_image(
         output_path = build_dir / f"{image_name.replace(':', '_').replace('/', '_')}.sif"
         build_cmd.extend([str(output_path.absolute()), str(definition_file.absolute())])
         
+        # Set up environment for Apptainer
+        env = os.environ.copy()
+        # Ensure temp directories exist and are writable
+        tmpdir = env.get('APPTAINER_TMPDIR', env.get('TMPDIR', '/tmp'))
+        os.makedirs(tmpdir, exist_ok=True)
+        env['APPTAINER_TMPDIR'] = tmpdir
+        env['APPTAINER_CACHEDIR'] = str(Path.home() / '.apptainer' / 'cache')
+        os.makedirs(env['APPTAINER_CACHEDIR'], exist_ok=True)
+        
         # Execute the build command (use absolute build_dir path)
+        logger.info(f"Running: {' '.join(build_cmd)}")
+        logger.info(f"APPTAINER_TMPDIR: {tmpdir}")
         result = subprocess.run(
             build_cmd,
             cwd=str(build_dir.absolute()),
             capture_output=True,
-            text=True
+            text=True,
+            env=env
         )
         
         if result.returncode != 0:
@@ -197,6 +210,7 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
     lines = dockerfile.strip().split('\n')
     in_run_section = False
     run_commands = []
+    current_run_cmd = []
     
     for line in lines:
         line = line.strip()
@@ -204,8 +218,12 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
             continue
             
         if line.upper().startswith('FROM '):
-            # Extract base image
+            # Extract base image, remove Docker-specific flags
             base_image = line.split(' ', 1)[1]
+            # Remove --platform flag if present
+            if '--platform=' in base_image:
+                parts = base_image.split()
+                base_image = ' '.join([p for p in parts if not p.startswith('--platform=')])
             definition_content = f"Bootstrap: docker\nFrom: {base_image}\n\n"
             
         elif line.upper().startswith('RUN '):
@@ -221,13 +239,18 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
                     pass
             
             if run_cmd.endswith('\\'):
+                # Multi-line command continues
                 in_run_section = True
-                run_commands.append(run_cmd[:-1])
+                current_run_cmd.append(run_cmd[:-1].strip())
             else:
                 if in_run_section:
-                    run_commands.append(run_cmd)
+                    # End of multi-line command
+                    current_run_cmd.append(run_cmd.strip())
+                    run_commands.append(' '.join(current_run_cmd))
+                    current_run_cmd = []
                     in_run_section = False
                 else:
+                    # Single line command
                     run_commands.append(run_cmd)
                     
         elif line.upper().startswith('COPY ') or line.upper().startswith('ADD '):
@@ -258,6 +281,12 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
     # Write the definition file
     with open(definition_file, 'w') as f:
         f.write(definition_content)
+    
+    # Log the generated definition for debugging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Generated Apptainer definition file at {definition_file}")
+    logger.info(f"Definition content:\n{definition_content}")
     
     return definition_file
 
