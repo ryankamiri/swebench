@@ -27,6 +27,7 @@ from swebench.harness.utils import (
     load_swebench_dataset,
     get_predictions_from_file,
 )
+from swebench.harness.wandb_logging import EvaluationLogger
 
 # Setup logging
 logging.basicConfig(
@@ -223,8 +224,22 @@ echo "===END_TEST_OUTPUT==="
             repo_dir = self._get_repo_workspace(instance)
             print(f"   ✅ Workspace ready: {repo_dir}")
             
-            # Apply patch
+            # Print raw completion/patch
             print(f"2️⃣  Applying patch...")
+            print(f"   Patch length: {len(patch)} characters")
+            if prediction.get('metadata'):
+                print(f"\n   📝 Raw LLM Completion:")
+                print(f"   {'-'*60}")
+                raw_completion = prediction['metadata'].get('raw_completion', '')
+                print(f"   {raw_completion}...")
+                print(f"   {'-'*60}")
+                print(f"   Full length: {len(raw_completion)} characters\n")
+            
+            print(f"   📄 Cleaned Patch:")
+            print(f"   {'-'*60}")
+            print(f"   {patch}...")
+            print(f"   {'-'*60}\n")
+            
             patch_applied = self._apply_patch(patch, repo_dir)
             if not patch_applied:
                 print(f"   ❌ Patch application failed")
@@ -270,6 +285,8 @@ def run_evaluation_workspace(
     workspace_dir: str = "swe_workspace",
     output_dir: str = "evaluation_results",
     run_id: str = None,
+    wandb_project: str = None,
+    wandb_run_name: str = None,
 ) -> List[Dict]:
     """
     Run evaluation using workspace approach.
@@ -304,13 +321,36 @@ def run_evaluation_workspace(
         test_specs[instance_id] = make_test_spec(instance)
         instances_map[instance_id] = instance
     
+    # Initialize wandb if requested
+    wandb_logger = None
+    if wandb_project:
+        print(f"\n📊 Initializing wandb logging...")
+        print(f"   Project: {wandb_project}")
+        print(f"   Run name: {wandb_run_name or 'auto-generated'}\n")
+        
+        wandb_logger = EvaluationLogger(
+            project=wandb_project,
+            run_name=wandb_run_name,
+            config={
+                "dataset_name": dataset_name,
+                "workspace_dir": workspace_dir,
+                "run_id": run_id,
+                "num_predictions": len(predictions),
+            }
+        )
+    
     # Initialize evaluator
+    print(f"\n🔧 Initializing workspace evaluator...")
     evaluator = WorkspaceEvaluator(workspace_dir=workspace_dir)
+    print(f"✅ Evaluator ready\n")
     
     # Evaluate each prediction
     results = []
     for i, pred in enumerate(predictions, 1):
         instance_id = pred[KEY_INSTANCE_ID]
+        print(f"\n{'*'*70}")
+        print(f"Processing [{i}/{len(predictions)}]: {instance_id}")
+        print(f"{'*'*70}")
         logger.info(f"[{i}/{len(predictions)}] Processing {instance_id}")
         
         if instance_id not in test_specs:
@@ -321,6 +361,10 @@ def run_evaluation_workspace(
         test_spec = test_specs[instance_id]
         result = evaluator.evaluate_instance(instance, test_spec, pred)
         results.append(result)
+        
+        # Log to wandb
+        if wandb_logger:
+            wandb_logger.log_instance_evaluation(result)
         
         # Save intermediate results
         if run_id:
@@ -334,6 +378,14 @@ def run_evaluation_workspace(
     resolved = sum(1 for r in results if r.get('resolved', False))
     patch_applied = sum(1 for r in results if r.get('patch_applied', False))
     
+    print(f"\n{'='*70}")
+    print(f"📊 EVALUATION SUMMARY")
+    print(f"{'='*70}")
+    print(f"Total instances: {total}")
+    print(f"Patches applied: {patch_applied}/{total} ({patch_applied/total*100:.1f}%)")
+    print(f"Resolved: {resolved}/{total} ({resolved/total*100:.1f}%)")
+    print(f"{'='*70}\n")
+    
     logger.info("=" * 50)
     logger.info("EVALUATION SUMMARY")
     logger.info("=" * 50)
@@ -341,6 +393,11 @@ def run_evaluation_workspace(
     logger.info(f"Patches applied: {patch_applied}/{total}")
     logger.info(f"Resolved: {resolved}/{total}")
     logger.info(f"Resolution rate: {resolved/total*100:.1f}%")
+    
+    # Log final results to wandb
+    if wandb_logger:
+        wandb_logger.log_final_evaluation(results)
+        wandb_logger.finish()
     
     return results
 
@@ -387,6 +444,20 @@ def main():
         help="Run ID for this evaluation",
     )
     
+    parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default=None,
+        help="Wandb project name (optional)",
+    )
+    
+    parser.add_argument(
+        "--wandb_run_name",
+        type=str,
+        default=None,
+        help="Wandb run name (optional)",
+    )
+    
     args = parser.parse_args()
     
     if args.run_id is None:
@@ -413,6 +484,8 @@ def main():
         workspace_dir=args.workspace_dir,
         output_dir=args.output_dir,
         run_id=args.run_id,
+        wandb_project=args.wandb_project,
+        wandb_run_name=args.wandb_run_name,
     )
     
     logger.info(f"Evaluation complete! Results saved to {args.output_dir}/{args.run_id}_results.jsonl")

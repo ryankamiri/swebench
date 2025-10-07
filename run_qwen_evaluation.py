@@ -143,6 +143,13 @@ def run_evaluation(
         "--run_id", run_id,
     ]
     
+    # Add wandb arguments if provided
+    if wandb_project:
+        cmd.extend(["--wandb_project", wandb_project])
+    
+    if wandb_run_name:
+        cmd.extend(["--wandb_run_name", wandb_run_name])
+    
     logger.info(f"Running evaluation command: {' '.join(cmd)}")
     
     result = subprocess.run(cmd, capture_output=True, text=True)
