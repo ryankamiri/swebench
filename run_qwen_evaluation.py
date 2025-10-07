@@ -133,9 +133,9 @@ def run_evaluation(
     if run_id is None:
         run_id = f"eval_{int(time.time())}"
     
-    # Run the evaluation script
+    # Run the evaluation script using Apptainer
     cmd = [
-        "python", "-m", "swebench.harness.run_evaluation_with_wandb",
+        "python", "-m", "swebench.harness.run_evaluation_apptainer",
         "--predictions_path", predictions_path,
         "--dataset_name", dataset_name,
         "--max_workers", str(max_workers),
@@ -147,7 +147,6 @@ def run_evaluation(
         "--clean", str(clean).lower(),
         "--rewrite_reports", str(rewrite_reports).lower(),
         "--run_id", run_id,
-        "--wandb_project", wandb_project,
     ]
     
     if timeout:
