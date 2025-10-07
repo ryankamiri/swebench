@@ -1,0 +1,20 @@
+# Apptainer-specific requirements for SWE-bench
+# These are in addition to the standard requirements
+
+# Core dependencies (same as original)
+datasets>=2.0.0
+docker>=6.0.0  # Keep for compatibility, but we'll use our Apptainer client
+tqdm>=4.64.0
+requests>=2.25.0
+
+# Apptainer/Singularity support
+# Note: Apptainer itself needs to be installed separately on the system
+# This is typically done via system package manager or conda
+
+# Additional dependencies for Apptainer integration
+psutil>=5.8.0  # For process management
+pathlib2>=2.3.0  # For enhanced path handling
+
+# Development and testing
+pytest>=6.0.0
+pytest-cov>=2.10.0
