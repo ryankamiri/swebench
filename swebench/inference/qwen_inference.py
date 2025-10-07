@@ -168,11 +168,13 @@ class QwenInference:
         
         # Convert to lowercase for case-insensitive matching
         # Pattern to match any README file sections with any extension
-        # Matches: [start of readme...] ... [end of readme...]
+        # Matches: [start of ...readme...] (with optional newline) ... [end of ...readme...]
         text_lower = text.lower()
         
         # Find all README sections in the lowercase version
-        readme_pattern = r'\[start of readme[^\]]*\].*?\[end of readme[^\]]*\]'
+        # Match any path containing 'readme' (e.g., README.rst, docs/README.md, etc.)
+        # \s* allows for optional whitespace/newlines after [start of ...]
+        readme_pattern = r'\[start of [^\]]*readme[^\]]*\]\s*.*?\s*\[end of [^\]]*readme[^\]]*\]'
         
         # Find matches in lowercase text, then remove them from original text
         matches = list(re.finditer(readme_pattern, text_lower, flags=re.DOTALL))
