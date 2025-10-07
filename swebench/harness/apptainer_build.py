@@ -138,14 +138,14 @@ def build_image(
         if nocache:
             build_cmd.append("--no-cache")
         
-        # Add the output image path and definition file
-        output_path = build_dir / f"{image_name.replace(':', '_')}.sif"
-        build_cmd.extend([str(output_path), str(definition_file)])
+        # Add the output image path and definition file (use absolute paths)
+        output_path = build_dir / f"{image_name.replace(':', '_').replace('/', '_')}.sif"
+        build_cmd.extend([str(output_path.absolute()), str(definition_file.absolute())])
         
-        # Execute the build command
+        # Execute the build command (use absolute build_dir path)
         result = subprocess.run(
             build_cmd,
-            cwd=build_dir,
+            cwd=str(build_dir.absolute()),
             capture_output=True,
             text=True
         )
@@ -185,6 +185,8 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
     Returns:
         Path: Path to the generated Apptainer definition file
     """
+    # Ensure build directory exists
+    build_dir.mkdir(parents=True, exist_ok=True)
     definition_file = build_dir / "apptainer.def"
     
     # Start with the Apptainer definition header
