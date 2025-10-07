@@ -156,6 +156,41 @@ class WorkspaceEvaluator:
             )
             
             if result.returncode != 0:
+                print(f"\n   ⚠️  First git apply attempt failed")
+                print(f"   Git apply error:")
+                print(f"   {'-'*60}")
+                print(f"   {result.stderr}")
+                print(f"   {'-'*60}")
+                
+                # Show what file git was trying to patch
+                print(f"\n   🔍 Patch Analysis:")
+                patch_lines = patch.split('\n')
+                for line in patch_lines[:10]:
+                    if line.startswith('---') or line.startswith('+++'):
+                        filename = line.split(' ')[1] if len(line.split()) > 1 else 'unknown'
+                        if filename.startswith('a/') or filename.startswith('b/'):
+                            filename = filename[2:]
+                        print(f"   Target file: {filename}")
+                        
+                        # Show actual file content around the patch location
+                        file_path = repo_dir / filename
+                        if file_path.exists():
+                            print(f"   File exists: ✅")
+                            with open(file_path, 'r') as f:
+                                file_lines = f.readlines()
+                            print(f"   File has {len(file_lines)} lines")
+                            
+                            # Try to find the line mentioned in patch
+                            for patch_line in patch_lines:
+                                if patch_line.startswith('@@'):
+                                    print(f"   Patch hunk: {patch_line}")
+                                    break
+                        else:
+                            print(f"   File exists: ❌")
+                        break
+                
+                print(f"   Trying with --reject flag...\n")
+                
                 # Try with --reject
                 result = subprocess.run(
                     ["git", "apply", "--verbose", "--reject", patch_file],
@@ -164,6 +199,13 @@ class WorkspaceEvaluator:
                     text=True,
                     timeout=30
                 )
+                
+                if result.returncode != 0:
+                    print(f"\n   ❌ Git apply failed (both attempts)")
+                    print(f"   Error output:")
+                    print(f"   {'-'*60}")
+                    print(f"   {result.stderr}")
+                    print(f"   {'-'*60}\n")
             
             os.remove(patch_file)
             return result.returncode == 0
@@ -218,6 +260,19 @@ echo "===END_TEST_OUTPUT==="
         print(f"{'='*60}")
         logger.info(f"Evaluating {instance_id}...")
         
+        # Print problem statement and gold patch for reference
+        print(f"\n📖 Problem Statement:")
+        print(f"   {'-'*60}")
+        problem_text = instance.get('text', instance.get('problem_statement', 'N/A'))
+        print(f"   {problem_text}")
+        print(f"   {'-'*60}\n")
+        
+        print(f"🎯 Gold Patch (for reference):")
+        print(f"   {'-'*60}")
+        gold_patch = instance.get('patch', 'N/A')
+        print(f"   {gold_patch}")
+        print(f"   {'-'*60}\n")
+        
         try:
             # Get workspace
             print(f"1️⃣  Setting up repository workspace...")
@@ -235,7 +290,7 @@ echo "===END_TEST_OUTPUT==="
                 print(f"   {'-'*60}")
                 print(f"   Full length: {len(raw_completion)} characters\n")
             
-            print(f"   📄 Cleaned Patch:")
+            print(f"   📄 LLM Generated Patch:")
             print(f"   {'-'*60}")
             print(f"   {patch}...")
             print(f"   {'-'*60}\n")
