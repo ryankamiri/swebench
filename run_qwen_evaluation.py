@@ -152,11 +152,12 @@ def run_evaluation(
     
     logger.info(f"Running evaluation command: {' '.join(cmd)}")
     
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    # Run without capturing output so we can see progress in real-time
+    result = subprocess.run(cmd)
     
     if result.returncode != 0:
-        logger.error(f"Evaluation failed: {result.stderr}")
-        raise RuntimeError(f"Evaluation failed: {result.stderr}")
+        logger.error(f"Evaluation failed with return code: {result.returncode}")
+        raise RuntimeError(f"Evaluation failed with return code: {result.returncode}")
     
     logger.info("Evaluation completed successfully")
     
