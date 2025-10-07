@@ -376,14 +376,16 @@ def run_evaluation_workspace(
     # Generate summary
     total = len(results)
     resolved = sum(1 for r in results if r.get('resolved', False))
-    patch_applied = sum(1 for r in results if r.get('patch_applied', False))
+    patch_applied_count = sum(1 for r in results if r.get('patch_applied', False))
+    patch_failed_count = total - patch_applied_count
     
     print(f"\n{'='*70}")
     print(f"📊 EVALUATION SUMMARY")
     print(f"{'='*70}")
-    print(f"Total instances: {total}")
-    print(f"Patches applied: {patch_applied}/{total} ({patch_applied/total*100:.1f}%)")
-    print(f"Resolved: {resolved}/{total} ({resolved/total*100:.1f}%)")
+    print(f"Total completions generated:  {total}")
+    print(f"Patches applied successfully: {patch_applied_count}/{total} ({patch_applied_count/total*100:.1f}%)")
+    print(f"Patches failed to apply:      {patch_failed_count}/{total} ({patch_failed_count/total*100:.1f}%)")
+    print(f"Instances resolved (passed):  {resolved}/{total} ({resolved/total*100:.1f}%)")
     print(f"{'='*70}\n")
     
     logger.info("=" * 50)

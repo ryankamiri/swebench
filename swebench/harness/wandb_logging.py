@@ -236,7 +236,12 @@ class EvaluationLogger(SWEBenchWandbLogger):
         failed_instances = len([r for r in reports if r.get("status") == "FAILED"])
         error_instances = len([r for r in reports if r.get("status") not in ["PASSED", "FAILED"]])
         
+        # Patch application statistics
+        patches_applied = len([r for r in reports if r.get("patch_applied", False)])
+        patches_failed = len([r for r in reports if not r.get("patch_applied", False)])
+        
         pass_rate = passed_instances / total_instances if total_instances > 0 else 0
+        patch_apply_rate = patches_applied / total_instances if total_instances > 0 else 0
         duration = time.time() - self.metrics["start_time"]
         
         # Log final metrics
@@ -246,6 +251,9 @@ class EvaluationLogger(SWEBenchWandbLogger):
             "final/failed_instances": failed_instances,
             "final/error_instances": error_instances,
             "final/pass_rate": pass_rate,
+            "final/patches_applied": patches_applied,
+            "final/patches_failed_to_apply": patches_failed,
+            "final/patch_apply_rate": patch_apply_rate,
             "final/duration_seconds": duration,
             "final/duration_minutes": duration / 60,
         }
