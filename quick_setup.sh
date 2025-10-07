@@ -38,7 +38,8 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 echo "📚 Installing core dependencies..."
 # Fix importlib-metadata for Python 3.9 compatibility
 pip install --upgrade importlib-metadata
-pip install transformers>=4.30.0
+# Install transformers version compatible with Python 3.9 and Qwen2.5
+pip install transformers==4.46.0
 pip install datasets>=2.0.0
 pip install accelerate
 pip install bitsandbytes
