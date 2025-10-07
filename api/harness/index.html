@@ -13660,7 +13660,15 @@ streaming ephemeral output from Modal containers.</p>
 <span class="normal">221</span>
 <span class="normal">222</span>
 <span class="normal">223</span>
-<span class="normal">224</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_image</span><span class="p">(</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_image</span><span class="p">(</span>
     <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">setup_scripts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">dockerfile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -13736,9 +13744,17 @@ streaming ephemeral output from Modal containers.</p>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pulling pre-built Docker image: docker://</span><span class="si">{</span><span class="n">docker_image</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-        <span class="c1"># Set up cache directory for images (use absolute path)</span>
-        <span class="n">image_cache_dir</span> <span class="o">=</span> <span class="p">(</span><span class="n">build_dir</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"apptainer_images"</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+        <span class="c1"># Use workspace directory for images (matching working agent's approach)</span>
+        <span class="c1"># Priority: use existing workspace if available, otherwise create in build dir</span>
+        <span class="n">workspace_image_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"/projects/llpr/amiri.ry/dev/swe_workspace/apptainer_images"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">workspace_image_dir</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">image_cache_dir</span> <span class="o">=</span> <span class="n">workspace_image_dir</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Fallback to build directory</span>
+            <span class="n">image_cache_dir</span> <span class="o">=</span> <span class="p">(</span><span class="n">build_dir</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"apptainer_images"</span><span class="p">)</span>
+
         <span class="n">image_cache_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">image_cache_dir</span> <span class="o">=</span> <span class="n">image_cache_dir</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
 
         <span class="c1"># Output SIF file path</span>
         <span class="n">sif_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">image_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">':'</span><span class="p">,</span><span class="w"> </span><span class="s1">'_'</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'/'</span><span class="p">,</span><span class="w"> </span><span class="s1">'_'</span><span class="p">)</span><span class="si">}</span><span class="s2">.sif"</span>
@@ -13896,15 +13912,7 @@ streaming ephemeral output from Modal containers.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_build.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">227</span>
-<span class="normal">228</span>
-<span class="normal">229</span>
-<span class="normal">230</span>
-<span class="normal">231</span>
-<span class="normal">232</span>
-<span class="normal">233</span>
-<span class="normal">234</span>
-<span class="normal">235</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">235</span>
 <span class="normal">236</span>
 <span class="normal">237</span>
 <span class="normal">238</span>
@@ -14002,7 +14010,15 @@ streaming ephemeral output from Modal containers.</p>
 <span class="normal">330</span>
 <span class="normal">331</span>
 <span class="normal">332</span>
-<span class="normal">333</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_dockerfile_to_apptainer</span><span class="p">(</span><span class="n">dockerfile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">build_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_dockerfile_to_apptainer</span><span class="p">(</span><span class="n">dockerfile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">build_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Convert a Dockerfile to an Apptainer definition file.</span>
 
@@ -14196,15 +14212,7 @@ streaming ephemeral output from Modal containers.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_build.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">336</span>
-<span class="normal">337</span>
-<span class="normal">338</span>
-<span class="normal">339</span>
-<span class="normal">340</span>
-<span class="normal">341</span>
-<span class="normal">342</span>
-<span class="normal">343</span>
-<span class="normal">344</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">344</span>
 <span class="normal">345</span>
 <span class="normal">346</span>
 <span class="normal">347</span>
@@ -14246,7 +14254,15 @@ streaming ephemeral output from Modal containers.</p>
 <span class="normal">383</span>
 <span class="normal">384</span>
 <span class="normal">385</span>
-<span class="normal">386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_base_images</span><span class="p">(</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_base_images</span><span class="p">(</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ApptainerClient</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
     <span class="n">force_rebuild</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -14369,15 +14385,7 @@ Returns only the environment images that need to be built.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_build.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">389</span>
-<span class="normal">390</span>
-<span class="normal">391</span>
-<span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span>
-<span class="normal">395</span>
-<span class="normal">396</span>
-<span class="normal">397</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">397</span>
 <span class="normal">398</span>
 <span class="normal">399</span>
 <span class="normal">400</span>
@@ -14421,7 +14429,15 @@ Returns only the environment images that need to be built.</p>
 <span class="normal">438</span>
 <span class="normal">439</span>
 <span class="normal">440</span>
-<span class="normal">441</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_env_configs_to_build</span><span class="p">(</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span>
+<span class="normal">444</span>
+<span class="normal">445</span>
+<span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span>
+<span class="normal">449</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_env_configs_to_build</span><span class="p">(</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ApptainerClient</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -14577,15 +14593,7 @@ Returns only the environment images that need to be built.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_build.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">444</span>
-<span class="normal">445</span>
-<span class="normal">446</span>
-<span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">452</span>
 <span class="normal">453</span>
 <span class="normal">454</span>
 <span class="normal">455</span>
@@ -14640,7 +14648,15 @@ Returns only the environment images that need to be built.</p>
 <span class="normal">504</span>
 <span class="normal">505</span>
 <span class="normal">506</span>
-<span class="normal">507</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_env_images</span><span class="p">(</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_env_images</span><span class="p">(</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ApptainerClient</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
     <span class="n">force_rebuild</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -14807,15 +14823,7 @@ Returns only the environment images that need to be built.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_build.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">510</span>
-<span class="normal">511</span>
-<span class="normal">512</span>
-<span class="normal">513</span>
-<span class="normal">514</span>
-<span class="normal">515</span>
-<span class="normal">516</span>
-<span class="normal">517</span>
-<span class="normal">518</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">518</span>
 <span class="normal">519</span>
 <span class="normal">520</span>
 <span class="normal">521</span>
@@ -14867,7 +14875,15 @@ Returns only the environment images that need to be built.</p>
 <span class="normal">567</span>
 <span class="normal">568</span>
 <span class="normal">569</span>
-<span class="normal">570</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_instance_images</span><span class="p">(</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_instance_images</span><span class="p">(</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ApptainerClient</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
     <span class="n">force_rebuild</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -15041,15 +15057,7 @@ Returns only the environment images that need to be built.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_build.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">573</span>
-<span class="normal">574</span>
-<span class="normal">575</span>
-<span class="normal">576</span>
-<span class="normal">577</span>
-<span class="normal">578</span>
-<span class="normal">579</span>
-<span class="normal">580</span>
-<span class="normal">581</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">581</span>
 <span class="normal">582</span>
 <span class="normal">583</span>
 <span class="normal">584</span>
@@ -15109,7 +15117,15 @@ Returns only the environment images that need to be built.</p>
 <span class="normal">638</span>
 <span class="normal">639</span>
 <span class="normal">640</span>
-<span class="normal">641</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_instance_image</span><span class="p">(</span>
+<span class="normal">641</span>
+<span class="normal">642</span>
+<span class="normal">643</span>
+<span class="normal">644</span>
+<span class="normal">645</span>
+<span class="normal">646</span>
+<span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_instance_image</span><span class="p">(</span>
     <span class="n">test_spec</span><span class="p">:</span> <span class="n">TestSpec</span><span class="p">,</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ApptainerClient</span><span class="p">,</span>
     <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
@@ -15323,15 +15339,7 @@ Returns only the environment images that need to be built.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_build.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">644</span>
-<span class="normal">645</span>
-<span class="normal">646</span>
-<span class="normal">647</span>
-<span class="normal">648</span>
-<span class="normal">649</span>
-<span class="normal">650</span>
-<span class="normal">651</span>
-<span class="normal">652</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">652</span>
 <span class="normal">653</span>
 <span class="normal">654</span>
 <span class="normal">655</span>
@@ -15382,7 +15390,15 @@ Returns only the environment images that need to be built.</p>
 <span class="normal">700</span>
 <span class="normal">701</span>
 <span class="normal">702</span>
-<span class="normal">703</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_container</span><span class="p">(</span>
+<span class="normal">703</span>
+<span class="normal">704</span>
+<span class="normal">705</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span>
+<span class="normal">711</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_container</span><span class="p">(</span>
     <span class="n">test_spec</span><span class="p">:</span> <span class="n">TestSpec</span><span class="p">,</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ApptainerClient</span><span class="p">,</span>
     <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -16883,10 +16899,10 @@ but uses Apptainer/Singularity commands under the hood.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/apptainer_client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">320</span>
-<span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_env</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'ApptainerClient'</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Create client from environment (mimicking Docker's from_env)."""</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span>
