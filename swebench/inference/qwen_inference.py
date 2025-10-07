@@ -162,6 +162,19 @@ class QwenInference:
         
         return patch, metadata
     
+    def _remove_readme(self, text: str) -> str:
+        """Remove README sections from the text to reduce noise."""
+        import re
+        
+        # Pattern to match README sections
+        # Matches: [start of README.*] ... [end of README.*]
+        readme_pattern = r'\[start of README[^\]]*\].*?\[end of README[^\]]*\]'
+        
+        # Remove README sections (case-insensitive, dotall for multiline)
+        cleaned_text = re.sub(readme_pattern, '', text, flags=re.DOTALL | re.IGNORECASE)
+        
+        return cleaned_text
+    
     def _construct_prompt(
         self,
         problem_statement: str,
@@ -170,16 +183,38 @@ class QwenInference:
     ) -> str:
         """Construct the prompt for the model."""
         
+        # Remove README from problem statement to reduce noise
+        problem_statement = self._remove_readme(problem_statement)
+        
         prompt = f"""<|im_start|>system
 You are an expert software engineer. Your task is to generate a patch (diff) that fixes the given problem. 
 
-Instructions:
-1. Analyze the problem statement carefully
-2. Understand the codebase structure and context
-3. Generate a precise patch that fixes the issue
-4. The patch should be in unified diff format
-5. Only include the necessary changes to fix the problem
-6. Make sure the patch is syntactically correct
+CRITICAL PATCH FORMAT RULES:
+1. Output ONLY the patch - no explanations, no markdown, no code fences
+2. Start immediately with "--- a/path/to/file.py"
+3. Each hunk must have sufficient context (3+ lines before and after changes)
+4. End each file's patch with a blank line
+5. If patching multiple files, add a blank line between each file's patch
+6. Include proper trailing newline at the end of the patch
+7. Use exact context from the actual code - verify line numbers match
+
+Patch Structure:
+```
+--- a/file1.py
++++ b/file1.py
+@@ -10,5 +10,6 @@ function_name():
+ context line 1
+ context line 2
+-old line
++new line
+ context line 3
+ context line 4
+
+--- a/file2.py
++++ b/file2.py
+@@ -20,3 +20,4 @@
+...
+```
 
 <|im_end|>
 <|im_start|>user
@@ -191,7 +226,7 @@ Repository Context:
 
 {f"Hints: {hints_text}" if hints_text else ""}
 
-Please generate a patch that fixes this problem. The patch should be in unified diff format starting with "---" and "+++".
+Generate ONLY a valid unified diff patch. Start with "---" immediately.
 
 <|im_end|>
 <|im_start|>assistant
@@ -201,25 +236,66 @@ Please generate a patch that fixes this problem. The patch should be in unified 
     
     def _extract_patch(self, generated_text: str) -> str:
         """Extract the patch from the generated text."""
-        # Look for diff markers
-        lines = generated_text.split('\n')
-        patch_lines = []
-        in_patch = False
-        
-        for line in lines:
-            if line.startswith('---') or line.startswith('+++'):
-                in_patch = True
-                patch_lines.append(line)
-            elif in_patch:
-                if line.startswith('@@') or line.startswith('+') or line.startswith('-') or line.startswith(' '):
-                    patch_lines.append(line)
-                elif line.strip() == '':
-                    patch_lines.append(line)
-                else:
-                    # End of patch
+        # Remove markdown code fences if present
+        cleaned_text = generated_text
+        if '```' in cleaned_text:
+            # Extract content between code fences
+            parts = cleaned_text.split('```')
+            for part in parts:
+                if '---' in part and '+++' in part:
+                    cleaned_text = part.strip()
+                    # Remove language specifier if present
+                    if cleaned_text.startswith(('diff', 'patch')):
+                        cleaned_text = '\n'.join(cleaned_text.split('\n')[1:])
                     break
         
-        return '\n'.join(patch_lines)
+        # Look for diff markers
+        lines = cleaned_text.split('\n')
+        patch_lines = []
+        in_patch = False
+        blank_line_count = 0
+        
+        for i, line in enumerate(lines):
+            # Start of a file patch
+            if line.startswith('---'):
+                in_patch = True
+                blank_line_count = 0
+                patch_lines.append(line)
+            elif line.startswith('+++') and in_patch:
+                patch_lines.append(line)
+            elif in_patch:
+                # Inside patch - include diff content
+                if line.startswith('@@') or line.startswith('+') or line.startswith('-') or line.startswith(' ') or line.startswith('\\'):
+                    patch_lines.append(line)
+                    blank_line_count = 0
+                elif line.strip() == '':
+                    # Preserve blank lines (they might separate files or be part of context)
+                    patch_lines.append(line)
+                    blank_line_count += 1
+                    
+                    # If we have multiple consecutive blank lines and next line doesn't look like patch content
+                    # this might be the end of the patch
+                    if blank_line_count >= 2 and i + 1 < len(lines):
+                        next_line = lines[i + 1]
+                        if not (next_line.startswith(('---', '+++', '@@', '+', '-', ' ', '\\')) or next_line.strip() == ''):
+                            break
+                elif line.startswith(('diff --git', 'index ')):
+                    # Git metadata - include it
+                    patch_lines.append(line)
+                    blank_line_count = 0
+                else:
+                    # Non-patch content
+                    # Only stop if we've collected substantial patch content
+                    if len(patch_lines) > 3 and any(l.startswith('@@') for l in patch_lines):
+                        break
+        
+        result = '\n'.join(patch_lines)
+        
+        # Ensure trailing newline
+        if result and not result.endswith('\n'):
+            result += '\n'
+        
+        return result.strip()
     
     def run_inference_on_dataset(
         self,

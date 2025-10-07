@@ -388,7 +388,7 @@ echo "===END_TEST_OUTPUT==="
             
             print(f"   📄 LLM Generated Patch:")
             print(f"   {'-'*60}")
-            print(f"   {patch}...")
+            print(f"   {patch}")
             print(f"   {'-'*60}\n")
             
             patch_applied = self._apply_patch(patch, repo_dir)
