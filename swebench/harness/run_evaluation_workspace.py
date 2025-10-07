@@ -28,6 +28,7 @@ from swebench.harness.utils import (
     get_predictions_from_file,
 )
 from swebench.harness.wandb_logging import EvaluationLogger
+from swebench.harness.text_utils import remove_readme
 
 # Setup logging
 logging.basicConfig(
@@ -356,11 +357,13 @@ echo "===END_TEST_OUTPUT==="
         print(f"{'='*60}")
         logger.info(f"Evaluating {instance_id}...")
         
-        # Print problem statement and gold patch for reference
+        # Print problem statement and gold patch for reference (with README removed)
         print(f"\n📖 Problem Statement:")
         print(f"   {'-'*60}")
         problem_text = instance.get('text', instance.get('problem_statement', 'N/A'))
-        print(f"   {problem_text}")
+        # Remove README sections to reduce noise
+        problem_text_cleaned = remove_readme(problem_text)
+        print(f"   {problem_text_cleaned}")
         print(f"   {'-'*60}\n")
         
         print(f"🎯 Gold Patch (for reference):")

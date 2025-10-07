@@ -15,6 +15,7 @@ import wandb
 
 from swebench.harness.utils import load_swebench_dataset
 from swebench.harness.wandb_logging import InferenceLogger
+from swebench.harness.text_utils import remove_readme
 
 logger = logging.getLogger(__name__)
 
@@ -162,31 +163,6 @@ class QwenInference:
         
         return patch, metadata
     
-    def _remove_readme(self, text: str) -> str:
-        """Remove README sections from the text to reduce noise."""
-        import re
-        
-        # Convert to lowercase for case-insensitive matching
-        # Pattern to match any README file sections with any extension
-        # Matches: [start of ...readme...] (with optional newline) ... [end of ...readme...]
-        text_lower = text.lower()
-        
-        # Find all README sections in the lowercase version
-        # Match any path containing 'readme' (e.g., README.rst, docs/README.md, etc.)
-        # \s* allows for optional whitespace/newlines after [start of ...]
-        readme_pattern = r'\[start of [^\]]*readme[^\]]*\]\s*.*?\s*\[end of [^\]]*readme[^\]]*\]'
-        
-        # Find matches in lowercase text, then remove them from original text
-        matches = list(re.finditer(readme_pattern, text_lower, flags=re.DOTALL))
-        
-        # Remove matches in reverse order to maintain correct indices
-        cleaned_text = text
-        for match in reversed(matches):
-            start, end = match.span()
-            cleaned_text = cleaned_text[:start] + cleaned_text[end:]
-        
-        return cleaned_text
-    
     def _construct_prompt(
         self,
         problem_statement: str,
@@ -196,7 +172,7 @@ class QwenInference:
         """Construct the prompt for the model."""
         
         # Remove README from problem statement to reduce noise
-        problem_statement = self._remove_readme(problem_statement)
+        problem_statement = remove_readme(problem_statement)
         
         prompt = f"""<|im_start|>system
 You are an expert software engineer. Your task is to generate a patch (diff) that fixes the given problem. 
