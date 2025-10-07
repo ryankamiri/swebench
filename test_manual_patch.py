@@ -73,10 +73,13 @@ def extract_patch(raw_completion: str) -> str:
                     break
     
     result = '\n'.join(patch_lines)
+    
+    # Ensure trailing newline but don't strip it away
     if result and not result.endswith('\n'):
         result += '\n'
     
-    return result.strip()
+    # Don't use strip() as it removes the important trailing newline
+    return result
 
 
 def test_patch_on_instance(instance_id: str, raw_completion: str, workspace_dir: str = "test_workspace"):

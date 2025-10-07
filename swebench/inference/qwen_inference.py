@@ -279,11 +279,13 @@ Generate ONLY a valid unified diff patch. Start with "---" immediately.
         
         result = '\n'.join(patch_lines)
         
-        # Ensure trailing newline
+        # Ensure trailing newline but don't strip it away
+        # Git patches require proper trailing newlines
         if result and not result.endswith('\n'):
             result += '\n'
         
-        return result.strip()
+        # Don't use strip() as it removes the important trailing newline
+        return result
     
     def run_inference_on_dataset(
         self,
