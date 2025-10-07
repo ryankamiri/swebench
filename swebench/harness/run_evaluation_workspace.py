@@ -205,7 +205,103 @@ class WorkspaceEvaluator:
                     print(f"   Error output:")
                     print(f"   {'-'*60}")
                     print(f"   {result.stderr}")
-                    print(f"   {'-'*60}\n")
+                    print(f"   {'-'*60}")
+                    
+                    # Extract error line number from git error message
+                    import re
+                    error_lines = []
+                    for match in re.finditer(r'line (\d+)', result.stderr):
+                        error_lines.append(int(match.group(1)))
+                    
+                    # Read the actual patch file that git tried to apply
+                    print(f"\n   📄 Patch file: {patch_file}")
+                    print(f"   Reading from disk to see exactly what git saw...")
+                    print(f"   {'-'*60}")
+                    
+                    try:
+                        # Read as binary first to detect encoding issues
+                        with open(patch_file, 'rb') as f:
+                            patch_bytes = f.read()
+                        
+                        print(f"   File size: {len(patch_bytes)} bytes")
+                        
+                        # Try to decode as UTF-8
+                        try:
+                            patch_content = patch_bytes.decode('utf-8')
+                            print(f"   Encoding: UTF-8 ✅")
+                        except UnicodeDecodeError as e:
+                            print(f"   Encoding: UTF-8 ❌ (error: {e})")
+                            patch_content = patch_bytes.decode('utf-8', errors='replace')
+                        
+                        # Split into lines
+                        patch_lines = patch_content.split('\n')
+                        print(f"   Total lines in patch file: {len(patch_lines)}")
+                        
+                        # Check for common corruption issues
+                        has_diff_header = any(line.startswith('---') for line in patch_lines)
+                        has_plus_header = any(line.startswith('+++') for line in patch_lines)
+                        has_hunk_header = any(line.startswith('@@') for line in patch_lines)
+                        
+                        print(f"\n   Patch validation:")
+                        print(f"     - Has '---' header: {'✅' if has_diff_header else '❌'}")
+                        print(f"     - Has '+++' header: {'✅' if has_plus_header else '❌'}")
+                        print(f"     - Has '@@' hunk: {'✅' if has_hunk_header else '❌'}")
+                        
+                        # Check for weird characters or encoding issues
+                        non_printable = []
+                        for i, line in enumerate(patch_lines, 1):
+                            for j, char in enumerate(line):
+                                if ord(char) < 32 and char not in '\t\n\r':
+                                    non_printable.append((i, j, char, ord(char)))
+                        
+                        if non_printable:
+                            print(f"     - Non-printable chars: ⚠️ Found {len(non_printable)}")
+                            for line_no, col, char, code in non_printable[:5]:
+                                print(f"         Line {line_no}, col {col}: char code {code} ({repr(char)})")
+                        else:
+                            print(f"     - Non-printable chars: ✅ None")
+                        
+                        # Check line endings
+                        has_crlf = b'\r\n' in patch_bytes
+                        has_lf = b'\n' in patch_bytes and not has_crlf
+                        print(f"     - Line endings: {'CRLF (Windows)' if has_crlf else 'LF (Unix)' if has_lf else 'Unknown'}")
+                        
+                        print(f"\n   {'-'*60}")
+                        print(f"   Patch content with line numbers:")
+                        print(f"   {'-'*60}")
+                        
+                        # Show context around error lines
+                        for i, line in enumerate(patch_lines, 1):
+                            # Highlight problematic lines mentioned in error
+                            if i in error_lines:
+                                print(f"   >>> {i:3d}: {repr(line)} <<<  ⚠️ ERROR AT THIS LINE")
+                                # Show hex dump for problematic line to see hidden chars
+                                hex_dump = ' '.join(f'{ord(c):02x}' for c in line[:50])
+                                print(f"        Hex: {hex_dump}")
+                                print(f"        Length: {len(line)} chars")
+                                if line:
+                                    print(f"        First char: {repr(line[0])} (code: {ord(line[0])})")
+                                    print(f"        Last char: {repr(line[-1])} (code: {ord(line[-1])})")
+                            elif error_lines and any(abs(i - err_line) <= 3 for err_line in error_lines):
+                                # Show context around error (3 lines before/after)
+                                print(f"       {i:3d}: {repr(line)}")
+                            elif not error_lines:
+                                # If no specific line found, show all (up to limit)
+                                print(f"       {i:3d}: {repr(line)}")
+                            
+                            # Only show first 50 lines to avoid spam (unless error is later)
+                            if not error_lines and i > 50:
+                                print(f"       ... ({len(patch_lines) - 50} more lines)")
+                                break
+                            elif error_lines and i > max(error_lines) + 10:
+                                remaining = len(patch_lines) - i
+                                if remaining > 0:
+                                    print(f"       ... ({remaining} more lines)")
+                                break
+                        print(f"   {'-'*60}\n")
+                        
+                    except Exception as read_error:
+                        print(f"   ❌ Error reading patch file: {read_error}\n")
             
             os.remove(patch_file)
             return result.returncode == 0
@@ -447,7 +543,7 @@ def run_evaluation_workspace(
     logger.info("EVALUATION SUMMARY")
     logger.info("=" * 50)
     logger.info(f"Total instances: {total}")
-    logger.info(f"Patches applied: {patch_applied}/{total}")
+    logger.info(f"Patches applied: {patch_applied_count}/{total}")
     logger.info(f"Resolved: {resolved}/{total}")
     logger.info(f"Resolution rate: {resolved/total*100:.1f}%")
     
