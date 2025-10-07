@@ -44064,13 +44064,13 @@ similar to the working CoMLRL approach.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
-<span class="normal">45</span>
+                    <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">45</span>
 <span class="normal">46</span>
 <span class="normal">47</span>
 <span class="normal">48</span>
 <span class="normal">49</span>
-<span class="normal">50</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"swe_workspace"</span><span class="p">):</span>
+<span class="normal">50</span>
+<span class="normal">51</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"swe_workspace"</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">workspace_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">workspace_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">workspace_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using workspace directory: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace_dir</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -44160,8 +44160,7 @@ similar to the working CoMLRL approach.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">404</span>
-<span class="normal">405</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">405</span>
 <span class="normal">406</span>
 <span class="normal">407</span>
 <span class="normal">408</span>
@@ -44242,7 +44241,8 @@ similar to the working CoMLRL approach.</p>
 <span class="normal">483</span>
 <span class="normal">484</span>
 <span class="normal">485</span>
-<span class="normal">486</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">SWEbenchInstance</span><span class="p">,</span> <span class="n">test_spec</span><span class="p">:</span> <span class="n">TestSpec</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="normal">486</span>
+<span class="normal">487</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">SWEbenchInstance</span><span class="p">,</span> <span class="n">test_spec</span><span class="p">:</span> <span class="n">TestSpec</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Evaluate a single instance."""</span>
     <span class="n">instance_id</span> <span class="o">=</span> <span class="n">instance</span><span class="p">[</span><span class="n">KEY_INSTANCE_ID</span><span class="p">]</span>
     <span class="n">patch</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">KEY_PREDICTION</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
@@ -44492,8 +44492,7 @@ similar to the working CoMLRL approach.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">489</span>
-<span class="normal">490</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">490</span>
 <span class="normal">491</span>
 <span class="normal">492</span>
 <span class="normal">493</span>
@@ -44615,7 +44614,8 @@ similar to the working CoMLRL approach.</p>
 <span class="normal">609</span>
 <span class="normal">610</span>
 <span class="normal">611</span>
-<span class="normal">612</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation_workspace</span><span class="p">(</span>
+<span class="normal">612</span>
+<span class="normal">613</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation_workspace</span><span class="p">(</span>
     <span class="n">predictions_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -44763,8 +44763,7 @@ similar to the working CoMLRL approach.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">615</span>
-<span class="normal">616</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">616</span>
 <span class="normal">617</span>
 <span class="normal">618</span>
 <span class="normal">619</span>
@@ -44849,7 +44848,8 @@ similar to the working CoMLRL approach.</p>
 <span class="normal">698</span>
 <span class="normal">699</span>
 <span class="normal">700</span>
-<span class="normal">701</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="normal">701</span>
+<span class="normal">702</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Main entry point."""</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">"Run SWE-bench evaluation with workspace approach"</span><span class="p">,</span>
