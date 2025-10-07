@@ -156,9 +156,17 @@ def build_image(
         
         logger.info(f"Pulling pre-built Docker image: docker://{docker_image}")
         
-        # Set up cache directory for images (use absolute path)
-        image_cache_dir = (build_dir.parent.parent / "apptainer_images").resolve()
+        # Use workspace directory for images (matching working agent's approach)
+        # Priority: use existing workspace if available, otherwise create in build dir
+        workspace_image_dir = Path("/projects/llpr/amiri.ry/dev/swe_workspace/apptainer_images")
+        if workspace_image_dir.parent.exists():
+            image_cache_dir = workspace_image_dir
+        else:
+            # Fallback to build directory
+            image_cache_dir = (build_dir.parent.parent / "apptainer_images")
+        
         image_cache_dir.mkdir(parents=True, exist_ok=True)
+        image_cache_dir = image_cache_dir.resolve()
         
         # Output SIF file path
         sif_name = f"{image_name.replace(':', '_').replace('/', '_')}.sif"

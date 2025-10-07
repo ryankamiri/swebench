@@ -295,24 +295,32 @@ class ApptainerClient:
         if image_name in self._image_cache:
             return self._image_cache[image_name]
         
-        # Look for SIF or sandbox
+        # Look for SIF files or sandbox directories
         sif_name = f"{image_name.replace(':', '_').replace('/', '_')}.sif"
+        sandbox_name = image_name.replace(':', '_').replace('/', '_')
         
-        # Check only environment-configured and build directories
+        # Check multiple locations (matching working agent's approach)
         cache_locations = []
         
-        # 1. Environment-configured cache (priority)
+        # 1. Working agent's workspace (from the other repo)
+        cache_locations.append(Path("/projects/llpr/amiri.ry/dev/swe_workspace/apptainer_images") / sif_name)
+        
+        # 2. Environment-configured cache (from APPTAINER_CACHEDIR)
         env_cache = os.environ.get('APPTAINER_CACHEDIR')
         if env_cache:
             cache_locations.append(Path(env_cache) / sif_name)
         
-        # 2. Build directory cache
+        # 3. Our build directory cache
         cache_locations.append(Path("logs/build_images/apptainer_images") / sif_name)
         
+        # 4. Sandbox format in cache directory
+        cache_locations.append(Path.home() / ".apptainer" / "cache" / "images" / sandbox_name)
+        
+        # Check each location
         for location in cache_locations:
             if location.exists():
-                self._image_cache[image_name] = str(location)
-                return str(location)
+                self._image_cache[image_name] = str(location.absolute())
+                return str(location.absolute())
         
         # Fallback to the image name (might be a local path)
         return image_name
