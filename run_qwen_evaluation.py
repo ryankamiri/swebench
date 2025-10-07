@@ -133,33 +133,15 @@ def run_evaluation(
     if run_id is None:
         run_id = f"eval_{int(time.time())}"
     
-    # Run the evaluation script using Apptainer
+    # Run the evaluation script using the simplified workspace approach
     cmd = [
-        "python", "-m", "swebench.harness.run_evaluation_apptainer",
+        "python", "-m", "swebench.harness.run_evaluation_workspace",
         "--predictions_path", predictions_path,
         "--dataset_name", dataset_name,
-        "--max_workers", str(max_workers),
-        "--rm_image", str(rm_image).lower(),
-        "--force_rebuild", str(force_rebuild).lower(),
-        "--instance_image_tag", instance_image_tag,
-        "--env_image_tag", env_image_tag,
-        "--cache_level", cache_level,
-        "--clean", str(clean).lower(),
-        "--rewrite_reports", str(rewrite_reports).lower(),
+        "--workspace_dir", "swe_workspace",
+        "--output_dir", "evaluation_results",
         "--run_id", run_id,
     ]
-    
-    if timeout:
-        cmd.extend(["--timeout", str(timeout)])
-    
-    if namespace:
-        cmd.extend(["--namespace", namespace])
-    
-    if instance_ids:
-        cmd.extend(["--instance_ids"] + instance_ids)
-    
-    if wandb_run_name:
-        cmd.extend(["--wandb_run_name", wandb_run_name])
     
     logger.info(f"Running evaluation command: {' '.join(cmd)}")
     
