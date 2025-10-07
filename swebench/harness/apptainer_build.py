@@ -139,63 +139,79 @@ def build_image(
             f"Building Apptainer image {image_name} in {build_dir} with platform {platform}"
         )
         
-        # For HPC/NFS systems with xattr issues, build as sandbox
-        sandbox_path = build_dir / "sandbox"
+        # STRATEGY: Pull Docker image directly instead of building from .def
+        # This avoids NFS xattr issues entirely and matches the working agent's approach
         
-        # Build as sandbox to avoid xattr issues
-        build_cmd = ["apptainer", "build", "--sandbox", "--fakeroot", "--fix-perms"]
-        if nocache:
-            build_cmd.append("--no-cache")
+        # Extract the base Docker image from the Dockerfile
+        docker_image = "ubuntu:22.04"  # default
+        for line in dockerfile.split('\n'):
+            if line.strip().upper().startswith('FROM '):
+                # Extract base image, remove --platform flag
+                base_image = line.strip().split(' ', 1)[1]
+                if '--platform=' in base_image:
+                    parts = base_image.split()
+                    base_image = ' '.join([p for p in parts if not p.startswith('--platform=')])
+                docker_image = base_image.strip()
+                break
         
-        # Build to sandbox (use absolute paths)
-        build_cmd.extend([str(sandbox_path.absolute()), str(definition_file.absolute())])
+        logger.info(f"Pulling pre-built Docker image: docker://{docker_image}")
         
-        # Set up environment for Apptainer - use existing environment variables
+        # Set up cache directory for images (use absolute path)
+        image_cache_dir = (build_dir.parent.parent / "apptainer_images").resolve()
+        image_cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Output SIF file path
+        sif_name = f"{image_name.replace(':', '_').replace('/', '_')}.sif"
+        output_path = (image_cache_dir / sif_name).resolve()
+        
+        # Check if already exists
+        if output_path.exists() and not nocache:
+            logger.info(f"Image already exists at: {output_path}")
+            return
+        
+        # Set up environment for Apptainer (use configured directories)
         env = os.environ.copy()
-        # Keep the configured APPTAINER_TMPDIR from environment
-        tmpdir = env.get('APPTAINER_TMPDIR', env.get('SINGULARITY_TMPDIR', env.get('TMPDIR', '/tmp')))
-        logger.info(f"Using APPTAINER_TMPDIR from environment: {tmpdir}")
+        tmpdir = env.get('APPTAINER_TMPDIR', env.get('SINGULARITY_TMPDIR'))
+        cachedir = env.get('APPTAINER_CACHEDIR')
         
-        # Ensure temp and cache directories exist
-        os.makedirs(tmpdir, exist_ok=True)
-        cache_dir = env.get('APPTAINER_CACHEDIR', str(Path.home() / '.apptainer' / 'cache'))
-        os.makedirs(cache_dir, exist_ok=True)
-        env['APPTAINER_CACHEDIR'] = cache_dir
+        # Ensure directories exist
+        if tmpdir:
+            os.makedirs(tmpdir, exist_ok=True)
+            env['APPTAINER_TMPDIR'] = tmpdir
+            env['SINGULARITY_TMPDIR'] = tmpdir
         
-        # Execute the sandbox build command
-        logger.info(f"Running sandbox build: {' '.join(build_cmd)}")
-        logger.info(f"Working directory: {build_dir.absolute()}")
-        logger.info(f"Environment: APPTAINER_TMPDIR={tmpdir}, APPTAINER_CACHEDIR={cache_dir}")
+        if cachedir:
+            os.makedirs(cachedir, exist_ok=True)
+            env['APPTAINER_CACHEDIR'] = cachedir
+            env['SINGULARITY_CACHEDIR'] = cachedir
+        
+        # Pull the Docker image using Apptainer
+        pull_cmd = ["apptainer", "pull", str(output_path), f"docker://{docker_image}"]
+        
+        logger.info(f"Running: {' '.join(pull_cmd)}")
+        logger.info(f"Output path: {output_path}")
+        logger.info(f"APPTAINER_TMPDIR: {tmpdir}")
+        logger.info(f"APPTAINER_CACHEDIR: {cachedir}")
         
         result = subprocess.run(
-            build_cmd,
-            cwd=str(build_dir.absolute()),
+            pull_cmd,
             capture_output=True,
             text=True,
-            env=env
+            env=env,
+            timeout=1800  # 30 minute timeout for large images
         )
         
-        logger.info(f"Build stdout: {result.stdout}")
-        logger.info(f"Build stderr: {result.stderr}")
-        logger.info(f"Build return code: {result.returncode}")
+        logger.info(f"Pull stdout: {result.stdout}")
+        if result.stderr:
+            logger.info(f"Pull stderr: {result.stderr}")
+        logger.info(f"Pull return code: {result.returncode}")
         
         if result.returncode != 0:
-            logger.error(f"Sandbox build failed!")
-            raise BuildError(f"Apptainer sandbox build failed: {result.stderr}", "")
+            logger.error(f"Pull failed!")
+            raise BuildError(f"Apptainer pull failed: {result.stderr}", "")
         
-        logger.info("Sandbox built successfully!")
-        
-        # Use the sandbox directly as the image
-        # Move sandbox to final location
-        final_image_path = Path.home() / ".apptainer" / "cache" / "images" / image_name.replace(':', '_').replace('/', '_')
-        final_image_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        if sandbox_path.exists():
-            import shutil
-            if final_image_path.exists():
-                shutil.rmtree(final_image_path)
-            shutil.move(str(sandbox_path), str(final_image_path))
-            logger.info(f"Sandbox image moved to {final_image_path}")
+        logger.info(f"Successfully pulled image to: {output_path}")
+        logger.info("Note: Setup scripts will be run during container execution")
         
         
     except BuildError as e:
