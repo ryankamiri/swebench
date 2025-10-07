@@ -49,15 +49,21 @@ class WorkspaceEvaluator:
     
     def _get_python_image(self) -> str:
         """Get or pull a simple Python container."""
+        print("🐍 Getting Python image...")
+        
         cachedir = os.environ.get('APPTAINER_CACHEDIR')
         if not cachedir:
             cachedir = str((Path.cwd() / "logs/build_images/apptainer_images").resolve())
             os.makedirs(cachedir, exist_ok=True)
         
+        print(f"   Using cache directory: {cachedir}")
         sif_path = Path(cachedir) / "python_3.9.sif"
         
         if not sif_path.exists():
+            print("   Python 3.9 image not found, pulling from Docker Hub...")
+            print("   This may take several minutes...")
             logger.info("Pulling Python 3.9 image...")
+            
             env = os.environ.copy()
             env['APPTAINER_CACHEDIR'] = cachedir
             env['SINGULARITY_CACHEDIR'] = cachedir
@@ -69,6 +75,9 @@ class WorkspaceEvaluator:
             env['APPTAINER_TMPDIR'] = tmpdir
             env['SINGULARITY_TMPDIR'] = tmpdir
             
+            print(f"   Pulling to: {sif_path}")
+            print(f"   Command: apptainer pull {sif_path} docker://python:3.9")
+            
             result = subprocess.run(
                 ["apptainer", "pull", str(sif_path), "docker://python:3.9"],
                 capture_output=True,
@@ -78,9 +87,13 @@ class WorkspaceEvaluator:
             )
             
             if result.returncode != 0:
+                print(f"   ❌ Pull failed: {result.stderr}")
                 raise RuntimeError(f"Failed to pull Python image: {result.stderr}")
             
+            print(f"   ✅ Python image ready at: {sif_path}")
             logger.info(f"Python image ready at: {sif_path}")
+        else:
+            print(f"   ✅ Using existing Python image at: {sif_path}")
         
         return str(sif_path)
     
@@ -90,7 +103,11 @@ class WorkspaceEvaluator:
         repo_dir = self.workspace_dir / repo_name
         
         if not repo_dir.exists():
+            print(f"📥 Cloning repository: {instance['repo']}")
+            print(f"   Target directory: {repo_dir}")
+            print(f"   This may take a few minutes...")
             logger.info(f"Cloning {instance['repo']}...")
+            
             result = subprocess.run(
                 ["git", "clone", f"https://github.com/{instance['repo']}.git", str(repo_dir)],
                 capture_output=True,
@@ -98,9 +115,14 @@ class WorkspaceEvaluator:
                 timeout=300
             )
             if result.returncode != 0:
+                print(f"   ❌ Clone failed: {result.stderr}")
                 raise RuntimeError(f"Failed to clone {instance['repo']}: {result.stderr}")
+            print(f"   ✅ Repository cloned successfully")
+        else:
+            print(f"♻️  Using existing repository: {repo_dir}")
         
         # Checkout the correct commit
+        print(f"🔄 Resetting repository to clean state...")
         subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=repo_dir, capture_output=True)
         subprocess.run(["git", "clean", "-fdx"], cwd=repo_dir, capture_output=True)
         result = subprocess.run(
@@ -190,15 +212,22 @@ echo "===END_TEST_OUTPUT==="
         instance_id = instance[KEY_INSTANCE_ID]
         patch = prediction.get(KEY_PREDICTION, "")
         
+        print(f"\n{'='*60}")
+        print(f"📋 Evaluating instance: {instance_id}")
+        print(f"{'='*60}")
         logger.info(f"Evaluating {instance_id}...")
         
         try:
             # Get workspace
+            print(f"1️⃣  Setting up repository workspace...")
             repo_dir = self._get_repo_workspace(instance)
+            print(f"   ✅ Workspace ready: {repo_dir}")
             
             # Apply patch
+            print(f"2️⃣  Applying patch...")
             patch_applied = self._apply_patch(patch, repo_dir)
             if not patch_applied:
+                print(f"   ❌ Patch application failed")
                 logger.warning(f"Failed to apply patch for {instance_id}")
                 return {
                     "instance_id": instance_id,
@@ -206,8 +235,11 @@ echo "===END_TEST_OUTPUT==="
                     "resolved": False,
                     "error": "Patch application failed"
                 }
+            print(f"   ✅ Patch applied successfully")
             
             # Run tests
+            print(f"3️⃣  Running tests in Apptainer container...")
+            print(f"   This may take a few minutes...")
             stdout, stderr = self._run_tests(test_spec, repo_dir)
             
             # Reset workspace
@@ -359,6 +391,15 @@ def main():
     
     if args.run_id is None:
         args.run_id = f"workspace_eval_{int(time.time())}"
+    
+    print("\n" + "="*70)
+    print("🚀 SWE-bench Workspace Evaluation (Apptainer)")
+    print("="*70)
+    print(f"📁 Predictions: {args.predictions_path}")
+    print(f"📊 Dataset: {args.dataset_name}")
+    print(f"💾 Workspace: {args.workspace_dir}")
+    print(f"🆔 Run ID: {args.run_id}")
+    print("="*70 + "\n")
     
     logger.info("Starting workspace-based evaluation")
     logger.info(f"Predictions: {args.predictions_path}")
