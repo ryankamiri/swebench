@@ -139,31 +139,34 @@ def build_image(
             f"Building Apptainer image {image_name} in {build_dir} with platform {platform}"
         )
         
-        # Use apptainer build command with flags to handle HPC/NFS filesystems
-        build_cmd = ["apptainer", "build", "--fakeroot", "--fix-perms"]
+        # For HPC/NFS systems with xattr issues, build as sandbox
+        sandbox_path = build_dir / "sandbox"
+        
+        # Build as sandbox to avoid xattr issues
+        build_cmd = ["apptainer", "build", "--sandbox", "--fakeroot", "--fix-perms"]
         if nocache:
             build_cmd.append("--no-cache")
         
-        # Add the output image path and definition file (use absolute paths)
-        output_path = build_dir / f"{image_name.replace(':', '_').replace('/', '_')}.sif"
-        build_cmd.extend([str(output_path.absolute()), str(definition_file.absolute())])
+        # Build to sandbox (use absolute paths)
+        build_cmd.extend([str(sandbox_path.absolute()), str(definition_file.absolute())])
         
-        # Set up environment for Apptainer
+        # Set up environment for Apptainer - use existing environment variables
         env = os.environ.copy()
-        # Ensure temp directories exist and are writable
-        tmpdir = env.get('APPTAINER_TMPDIR', env.get('TMPDIR', '/tmp'))
+        # Keep the configured APPTAINER_TMPDIR from environment
+        tmpdir = env.get('APPTAINER_TMPDIR', env.get('SINGULARITY_TMPDIR', env.get('TMPDIR', '/tmp')))
+        logger.info(f"Using APPTAINER_TMPDIR from environment: {tmpdir}")
+        
+        # Ensure temp and cache directories exist
         os.makedirs(tmpdir, exist_ok=True)
-        env['APPTAINER_TMPDIR'] = tmpdir
-        env['APPTAINER_CACHEDIR'] = str(Path.home() / '.apptainer' / 'cache')
-        os.makedirs(env['APPTAINER_CACHEDIR'], exist_ok=True)
+        cache_dir = env.get('APPTAINER_CACHEDIR', str(Path.home() / '.apptainer' / 'cache'))
+        os.makedirs(cache_dir, exist_ok=True)
+        env['APPTAINER_CACHEDIR'] = cache_dir
         
-        # Disable xattr to avoid NFS/HPC filesystem issues
-        env['APPTAINER_DISABLE_CACHE'] = '0'
-        env['SINGULARITY_DISABLE_CACHE'] = '0'
+        # Execute the sandbox build command
+        logger.info(f"Running sandbox build: {' '.join(build_cmd)}")
+        logger.info(f"Working directory: {build_dir.absolute()}")
+        logger.info(f"Environment: APPTAINER_TMPDIR={tmpdir}, APPTAINER_CACHEDIR={cache_dir}")
         
-        # Execute the build command (use absolute build_dir path)
-        logger.info(f"Running: {' '.join(build_cmd)}")
-        logger.info(f"APPTAINER_TMPDIR: {tmpdir}")
         result = subprocess.run(
             build_cmd,
             cwd=str(build_dir.absolute()),
@@ -172,19 +175,28 @@ def build_image(
             env=env
         )
         
+        logger.info(f"Build stdout: {result.stdout}")
+        logger.info(f"Build stderr: {result.stderr}")
+        logger.info(f"Build return code: {result.returncode}")
+        
         if result.returncode != 0:
-            logger.error(f"Build failed: {result.stderr}")
-            raise BuildError(f"Apptainer build failed: {result.stderr}", "")
+            logger.error(f"Sandbox build failed!")
+            raise BuildError(f"Apptainer sandbox build failed: {result.stderr}", "")
         
-        logger.info("Image built successfully!")
+        logger.info("Sandbox built successfully!")
         
-        # Move the built image to the appropriate location
-        final_image_path = Path.home() / ".apptainer" / "cache" / "shub" / f"{image_name}.sif"
+        # Use the sandbox directly as the image
+        # Move sandbox to final location
+        final_image_path = Path.home() / ".apptainer" / "cache" / "images" / image_name.replace(':', '_').replace('/', '_')
         final_image_path.parent.mkdir(parents=True, exist_ok=True)
         
-        if output_path.exists():
-            output_path.rename(final_image_path)
-            logger.info(f"Image moved to {final_image_path}")
+        if sandbox_path.exists():
+            import shutil
+            if final_image_path.exists():
+                shutil.rmtree(final_image_path)
+            shutil.move(str(sandbox_path), str(final_image_path))
+            logger.info(f"Sandbox image moved to {final_image_path}")
+        
         
     except BuildError as e:
         logger.error(f"BuildError during {image_name}: {e}")
