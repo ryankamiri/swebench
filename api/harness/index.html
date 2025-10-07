@@ -6460,6 +6460,30 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#swebench.harness.text_utils" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;text_utils
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="&nbsp;text_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#swebench.harness.text_utils.remove_readme" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;remove_readme
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#swebench.harness.utils" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;utils
@@ -12728,6 +12752,30 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#swebench.harness.text_utils" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;text_utils
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="&nbsp;text_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#swebench.harness.text_utils.remove_readme" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;remove_readme
+    </span>
+  </a>
   
 </li>
         
@@ -44016,13 +44064,13 @@ similar to the working CoMLRL approach.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">43</span>
-<span class="normal">44</span>
+                    <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
 <span class="normal">45</span>
 <span class="normal">46</span>
 <span class="normal">47</span>
 <span class="normal">48</span>
-<span class="normal">49</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"swe_workspace"</span><span class="p">):</span>
+<span class="normal">49</span>
+<span class="normal">50</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"swe_workspace"</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">workspace_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">workspace_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">workspace_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using workspace directory: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace_dir</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -44112,8 +44160,7 @@ similar to the working CoMLRL approach.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">349</span>
-<span class="normal">350</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">350</span>
 <span class="normal">351</span>
 <span class="normal">352</span>
 <span class="normal">353</span>
@@ -44192,7 +44239,10 @@ similar to the working CoMLRL approach.</p>
 <span class="normal">426</span>
 <span class="normal">427</span>
 <span class="normal">428</span>
-<span class="normal">429</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">SWEbenchInstance</span><span class="p">,</span> <span class="n">test_spec</span><span class="p">:</span> <span class="n">TestSpec</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">SWEbenchInstance</span><span class="p">,</span> <span class="n">test_spec</span><span class="p">:</span> <span class="n">TestSpec</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Evaluate a single instance."""</span>
     <span class="n">instance_id</span> <span class="o">=</span> <span class="n">instance</span><span class="p">[</span><span class="n">KEY_INSTANCE_ID</span><span class="p">]</span>
     <span class="n">patch</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">KEY_PREDICTION</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
@@ -44202,11 +44252,13 @@ similar to the working CoMLRL approach.</p>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'='</span><span class="o">*</span><span class="mi">60</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Evaluating </span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
 
-    <span class="c1"># Print problem statement and gold patch for reference</span>
+    <span class="c1"># Print problem statement and gold patch for reference (with README removed)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">📖 Problem Statement:"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   </span><span class="si">{</span><span class="s1">'-'</span><span class="o">*</span><span class="mi">60</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="n">problem_text</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'text'</span><span class="p">,</span> <span class="n">instance</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'problem_statement'</span><span class="p">,</span> <span class="s1">'N/A'</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   </span><span class="si">{</span><span class="n">problem_text</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="c1"># Remove README sections to reduce noise</span>
+    <span class="n">problem_text_cleaned</span> <span class="o">=</span> <span class="n">remove_readme</span><span class="p">(</span><span class="n">problem_text</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   </span><span class="si">{</span><span class="n">problem_text_cleaned</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   </span><span class="si">{</span><span class="s1">'-'</span><span class="o">*</span><span class="mi">60</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🎯 Gold Patch (for reference):"</span><span class="p">)</span>
@@ -44440,10 +44492,7 @@ similar to the working CoMLRL approach.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">432</span>
-<span class="normal">433</span>
-<span class="normal">434</span>
-<span class="normal">435</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">435</span>
 <span class="normal">436</span>
 <span class="normal">437</span>
 <span class="normal">438</span>
@@ -44563,7 +44612,10 @@ similar to the working CoMLRL approach.</p>
 <span class="normal">552</span>
 <span class="normal">553</span>
 <span class="normal">554</span>
-<span class="normal">555</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation_workspace</span><span class="p">(</span>
+<span class="normal">555</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation_workspace</span><span class="p">(</span>
     <span class="n">predictions_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -44711,10 +44763,7 @@ similar to the working CoMLRL approach.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_workspace.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">558</span>
-<span class="normal">559</span>
-<span class="normal">560</span>
-<span class="normal">561</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">561</span>
 <span class="normal">562</span>
 <span class="normal">563</span>
 <span class="normal">564</span>
@@ -44797,7 +44846,10 @@ similar to the working CoMLRL approach.</p>
 <span class="normal">641</span>
 <span class="normal">642</span>
 <span class="normal">643</span>
-<span class="normal">644</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="normal">644</span>
+<span class="normal">645</span>
+<span class="normal">646</span>
+<span class="normal">647</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Main entry point."""</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">"Run SWE-bench evaluation with workspace approach"</span><span class="p">,</span>
@@ -47946,6 +47998,207 @@ This is the setup script for the environment image.</p>
     </div>
 
 </div>
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h4 id="swebench.harness.text_utils" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">text_utils</span>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+        <p>Text utility functions for SWE-bench harness.</p>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="swebench.harness.text_utils.remove_readme" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">remove_readme</span>
+
+
+</h5>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">remove_readme</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove README sections from the text to reduce noise.</p>
+<p>This function removes any sections that match the pattern:
+[start of ...readme...] ... [end of ...readme...]</p>
+<p>It works case-insensitively and handles any README file format:
+- README.rst
+- README.md
+- readme.txt
+- docs/README.md
+- etc.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>text</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The text to clean</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The text with README sections removed</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="quote">
+              <summary>Source code in <code>swebench/harness/text_utils.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_readme</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Remove README sections from the text to reduce noise.</span>
+
+<span class="sd">    This function removes any sections that match the pattern:</span>
+<span class="sd">    [start of ...readme...] ... [end of ...readme...]</span>
+
+<span class="sd">    It works case-insensitively and handles any README file format:</span>
+<span class="sd">    - README.rst</span>
+<span class="sd">    - README.md</span>
+<span class="sd">    - readme.txt</span>
+<span class="sd">    - docs/README.md</span>
+<span class="sd">    - etc.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text: The text to clean</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The text with README sections removed</span>
+<span class="sd">    """</span>
+    <span class="c1"># Convert to lowercase for case-insensitive matching</span>
+    <span class="n">text_lower</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="c1"># Find all README sections in the lowercase version</span>
+    <span class="c1"># Match any path containing 'readme' (e.g., README.rst, docs/README.md, etc.)</span>
+    <span class="n">readme_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'\[start of [^\]]*readme[^\]]*\]\s*.*?\s*\[end of [^\]]*readme[^\]]*\]'</span>
+
+    <span class="c1"># Find matches in lowercase text, then remove them from original text</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">readme_pattern</span><span class="p">,</span> <span class="n">text_lower</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">))</span>
+
+    <span class="c1"># Remove matches in reverse order to maintain correct indices</span>
+    <span class="n">cleaned_text</span> <span class="o">=</span> <span class="n">text</span>
+    <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">matches</span><span class="p">):</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">span</span><span class="p">()</span>
+        <span class="n">cleaned_text</span> <span class="o">=</span> <span class="n">cleaned_text</span><span class="p">[:</span><span class="n">start</span><span class="p">]</span> <span class="o">+</span> <span class="n">cleaned_text</span><span class="p">[</span><span class="n">end</span><span class="p">:]</span>
+
+    <span class="k">return</span> <span class="n">cleaned_text</span>
+</code></pre></div></td></tr></tbody></table></div>
+            </details>
+    </div>
+
+</div>
+
 
 
   </div>
