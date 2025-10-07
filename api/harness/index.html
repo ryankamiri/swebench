@@ -42148,7 +42148,9 @@ SWE-bench evaluations using Apptainer containers instead of Docker.</p>
 <span class="normal">607</span>
 <span class="normal">608</span>
 <span class="normal">609</span>
-<span class="normal">610</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Main entry point for Apptainer-based evaluation."""</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">"Run SWE-bench evaluation using Apptainer containers"</span><span class="p">,</span>
@@ -42277,7 +42279,7 @@ SWE-bench evaluations using Apptainer containers instead of Docker.</p>
 
     <span class="c1"># Filter dataset if specific instance IDs are provided</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">instance_ids</span><span class="p">:</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="p">[</span><span class="n">inst</span> <span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">dataset</span> <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">instance_id</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">instance_ids</span><span class="p">]</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="p">[</span><span class="n">inst</span> <span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">dataset</span> <span class="k">if</span> <span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'instance_id'</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">inst</span><span class="o">.</span><span class="n">instance_id</span><span class="p">)</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">instance_ids</span><span class="p">]</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Filtered to </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span><span class="si">}</span><span class="s2"> instances"</span><span class="p">)</span>
 
     <span class="c1"># Load predictions</span>
@@ -42285,15 +42287,17 @@ SWE-bench evaluations using Apptainer containers instead of Docker.</p>
         <span class="nb">print</span><span class="p">(</span><span class="s2">"Using gold predictions"</span><span class="p">)</span>
         <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
-                <span class="n">KEY_INSTANCE_ID</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">instance_id</span><span class="p">,</span>
+                <span class="n">KEY_INSTANCE_ID</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'instance_id'</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">inst</span><span class="o">.</span><span class="n">instance_id</span><span class="p">,</span>
                 <span class="n">KEY_MODEL</span><span class="p">:</span> <span class="s2">"gold"</span><span class="p">,</span>
-                <span class="n">KEY_PREDICTION</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">patch</span><span class="p">,</span>
+                <span class="n">KEY_PREDICTION</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'patch'</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">inst</span><span class="o">.</span><span class="n">patch</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">dataset</span>
         <span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loading predictions from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">predictions_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="n">get_predictions_from_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">predictions_path</span><span class="p">)</span>
+        <span class="c1"># Determine split from dataset size</span>
+        <span class="n">split</span> <span class="o">=</span> <span class="s2">"test"</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="s2">"dev"</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">get_predictions_from_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">predictions_path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
 
     <span class="c1"># Generate run ID if not provided</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">run_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
