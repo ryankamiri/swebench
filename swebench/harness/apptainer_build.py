@@ -111,6 +111,11 @@ def build_image(
         f"Using dockerfile:\n{dockerfile}\n"
         f"Adding ({len(setup_scripts)}) setup scripts to image build repo"
     )
+    
+    # Debug: print dockerfile line by line
+    logger.info("Dockerfile lines:")
+    for i, line in enumerate(dockerfile.split('\n'), 1):
+        logger.info(f"  Line {i}: {repr(line)}")
 
     for setup_script_name, setup_script in setup_scripts.items():
         logger.info(f"[SETUP SCRIPT] {setup_script_name}:\n{setup_script}")
@@ -134,8 +139,8 @@ def build_image(
             f"Building Apptainer image {image_name} in {build_dir} with platform {platform}"
         )
         
-        # Use apptainer build command
-        build_cmd = ["apptainer", "build", "--fakeroot"]
+        # Use apptainer build command with flags to handle HPC/NFS filesystems
+        build_cmd = ["apptainer", "build", "--fakeroot", "--fix-perms"]
         if nocache:
             build_cmd.append("--no-cache")
         
@@ -151,6 +156,10 @@ def build_image(
         env['APPTAINER_TMPDIR'] = tmpdir
         env['APPTAINER_CACHEDIR'] = str(Path.home() / '.apptainer' / 'cache')
         os.makedirs(env['APPTAINER_CACHEDIR'], exist_ok=True)
+        
+        # Disable xattr to avoid NFS/HPC filesystem issues
+        env['APPTAINER_DISABLE_CACHE'] = '0'
+        env['SINGULARITY_DISABLE_CACHE'] = '0'
         
         # Execute the build command (use absolute build_dir path)
         logger.info(f"Running: {' '.join(build_cmd)}")
@@ -271,6 +280,13 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
             user = line.split(' ', 1)[1]
             definition_content += f"%runscript\n    cd ${{WORKDIR:-/}}\n\n"
     
+    # Debug: Log collected RUN commands
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Collected {len(run_commands)} RUN commands:")
+    for i, cmd in enumerate(run_commands, 1):
+        logger.info(f"  RUN {i}: {repr(cmd)}")
+    
     # Add the %post section with all RUN commands
     if run_commands:
         definition_content += "%post\n"
@@ -283,8 +299,6 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
         f.write(definition_content)
     
     # Log the generated definition for debugging
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"Generated Apptainer definition file at {definition_file}")
     logger.info(f"Definition content:\n{definition_content}")
     
