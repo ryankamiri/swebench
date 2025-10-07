@@ -28,7 +28,6 @@ from swebench.harness.text_utils import remove_readme
 
 def extract_patch(raw_completion: str) -> str:
     """Extract patch from raw LLM completion."""
-    import re
     
     # Remove markdown code fences if present
     cleaned_text = raw_completion
@@ -303,7 +302,6 @@ def test_patch_on_instance(instance_id: str, raw_completion: str, workspace_dir:
                 for line in patch_lines:
                     if line.startswith('@@'):
                         # Extract starting line number
-                        import re
                         match = re.search(r'@@ -(\d+)', line)
                         if match:
                             hunk_line = int(match.group(1))
