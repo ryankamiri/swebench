@@ -100,6 +100,9 @@ def build_image(
         build_dir (Path): Directory for the build context (will also contain logs, scripts, and artifacts)
         nocache (bool): Whether to use the cache when building
     """
+    # Create build directory if it doesn't exist
+    build_dir.mkdir(parents=True, exist_ok=True)
+    
     # Create a logger for the build process
     logger = setup_logger(image_name, build_dir / "build_image.log")
     logger.info(
