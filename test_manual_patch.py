@@ -4,16 +4,19 @@ Interactive script to manually test LLM-generated patches.
 
 This script allows you to:
 1. Select an instance from the dataset
-2. Paste a raw LLM completion (multi-line)
-3. Test if the patch applies
-4. Run the tests
-5. See the results
+2. Read a raw LLM completion from patch.txt
+3. Test if the patch applies with detailed error logging
+4. See the results
 
-Press Enter on an empty line to skip or finish input.
+Usage:
+    python test_manual_patch.py [patch_file]
+    
+If no patch_file is specified, it will look for 'patch.txt' in the current directory.
 """
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -74,27 +77,6 @@ def extract_patch(raw_completion: str) -> str:
         result += '\n'
     
     return result.strip()
-
-
-def get_multiline_input(prompt: str) -> str:
-    """Get multi-line input from user. Empty line to finish."""
-    print(prompt)
-    print("(Paste your content, then press Enter on an empty line to finish)")
-    print("-" * 70)
-    
-    lines = []
-    while True:
-        try:
-            line = input()
-            if line == "":
-                if not lines:  # First line is empty = skip
-                    return ""
-                break
-            lines.append(line)
-        except EOFError:
-            break
-    
-    return '\n'.join(lines)
 
 
 def test_patch_on_instance(instance_id: str, raw_completion: str, workspace_dir: str = "test_workspace"):
@@ -190,7 +172,105 @@ def test_patch_on_instance(instance_id: str, raw_completion: str, workspace_dir:
         patch_applied = True
     else:
         print(f"❌ Patch application failed!")
-        print(f"Error: {result.stderr}")
+        print(f"   Error output:")
+        print(f"   {'-'*60}")
+        print(f"   {result.stderr}")
+        print(f"   {'-'*60}")
+        
+        # Extract error line number from git error message
+        error_lines = []
+        for match in re.finditer(r'line (\d+)', result.stderr):
+            error_lines.append(int(match.group(1)))
+        
+        # Read the actual patch file that git tried to apply
+        print(f"\n   📄 Patch file: {patch_file}")
+        print(f"   Reading from disk to see exactly what git saw...")
+        print(f"   {'-'*60}")
+        
+        try:
+            # Read as binary first to detect encoding issues
+            with open(patch_file, 'rb') as f:
+                patch_bytes = f.read()
+            
+            print(f"   File size: {len(patch_bytes)} bytes")
+            
+            # Try to decode as UTF-8
+            try:
+                patch_content = patch_bytes.decode('utf-8')
+                print(f"   Encoding: UTF-8 ✅")
+            except UnicodeDecodeError as e:
+                print(f"   Encoding: UTF-8 ❌ (error: {e})")
+                patch_content = patch_bytes.decode('utf-8', errors='replace')
+            
+            # Split into lines
+            patch_lines = patch_content.split('\n')
+            print(f"   Total lines in patch file: {len(patch_lines)}")
+            
+            # Check for common corruption issues
+            has_diff_header = any(line.startswith('---') for line in patch_lines)
+            has_plus_header = any(line.startswith('+++') for line in patch_lines)
+            has_hunk_header = any(line.startswith('@@') for line in patch_lines)
+            
+            print(f"\n   Patch validation:")
+            print(f"     - Has '---' header: {'✅' if has_diff_header else '❌'}")
+            print(f"     - Has '+++' header: {'✅' if has_plus_header else '❌'}")
+            print(f"     - Has '@@' hunk: {'✅' if has_hunk_header else '❌'}")
+            
+            # Check for weird characters or encoding issues
+            non_printable = []
+            for i, line in enumerate(patch_lines, 1):
+                for j, char in enumerate(line):
+                    if ord(char) < 32 and char not in '\t\n\r':
+                        non_printable.append((i, j, char, ord(char)))
+            
+            if non_printable:
+                print(f"     - Non-printable chars: ⚠️ Found {len(non_printable)}")
+                for line_no, col, char, code in non_printable[:5]:
+                    print(f"         Line {line_no}, col {col}: char code {code} ({repr(char)})")
+            else:
+                print(f"     - Non-printable chars: ✅ None")
+            
+            # Check line endings
+            has_crlf = b'\r\n' in patch_bytes
+            has_lf = b'\n' in patch_bytes and not has_crlf
+            print(f"     - Line endings: {'CRLF (Windows)' if has_crlf else 'LF (Unix)' if has_lf else 'Unknown'}")
+            
+            print(f"\n   {'-'*60}")
+            print(f"   Patch content with line numbers:")
+            print(f"   {'-'*60}")
+            
+            # Show context around error lines
+            for i, line in enumerate(patch_lines, 1):
+                # Highlight problematic lines mentioned in error
+                if i in error_lines:
+                    print(f"   >>> {i:3d}: {repr(line)} <<<  ⚠️ ERROR AT THIS LINE")
+                    # Show hex dump for problematic line to see hidden chars
+                    hex_dump = ' '.join(f'{ord(c):02x}' for c in line[:50])
+                    print(f"        Hex: {hex_dump}")
+                    print(f"        Length: {len(line)} chars")
+                    if line:
+                        print(f"        First char: {repr(line[0])} (code: {ord(line[0])})")
+                        print(f"        Last char: {repr(line[-1])} (code: {ord(line[-1])})")
+                elif error_lines and any(abs(i - err_line) <= 3 for err_line in error_lines):
+                    # Show context around error (3 lines before/after)
+                    print(f"       {i:3d}: {repr(line)}")
+                elif not error_lines:
+                    # If no specific line found, show all (up to limit)
+                    print(f"       {i:3d}: {repr(line)}")
+                
+                # Only show first 50 lines to avoid spam (unless error is later)
+                if not error_lines and i > 50:
+                    print(f"       ... ({len(patch_lines) - 50} more lines)")
+                    break
+                elif error_lines and i > max(error_lines) + 10:
+                    remaining = len(patch_lines) - i
+                    if remaining > 0:
+                        print(f"       ... ({remaining} more lines)")
+                    break
+            print(f"   {'-'*60}\n")
+            
+        except Exception as read_error:
+            print(f"   ❌ Error reading patch file: {read_error}\n")
         
         # Try with --reject
         print("\n   Trying with --reject flag...")
@@ -233,9 +313,25 @@ def main():
     print("🧪 MANUAL PATCH TESTING TOOL")
     print("="*70)
     print("\nThis tool lets you test LLM-generated patches on SWE-bench instances.")
-    print("You can paste raw completions and see if they apply and pass tests.")
-    print("\nPress Ctrl+C to exit at any time.")
+    print("It reads raw completions from a file (default: patch.txt)")
+    print("\nUsage: python test_manual_patch.py [patch_file]")
     print("="*70)
+    
+    # Get patch file from command line or use default
+    patch_file_path = sys.argv[1] if len(sys.argv) > 1 else "patch.txt"
+    
+    if not os.path.exists(patch_file_path):
+        print(f"\n❌ Patch file not found: {patch_file_path}")
+        print(f"\nPlease create a file with your LLM raw completion and try again.")
+        print(f"Example: echo 'your patch here' > {patch_file_path}")
+        return
+    
+    # Read the patch file
+    print(f"\n📄 Reading patch from: {patch_file_path}")
+    with open(patch_file_path, 'r') as f:
+        raw_completion = f.read()
+    
+    print(f"✅ Loaded {len(raw_completion)} characters")
     
     # Load dataset to show available instances
     print("\n📚 Loading dataset...")
@@ -263,9 +359,20 @@ def main():
         print("0. Exit")
         
         try:
-            choice = input("\nEnter choice (1-3, or 0 to exit): ").strip()
+            choice = input("\nEnter choice (1-3, or 0 to exit, or press Enter to reload patch.txt): ").strip()
             
-            if choice == "0" or choice == "":
+            if choice == "":
+                # Reload the patch file
+                print(f"\n🔄 Reloading patch from: {patch_file_path}")
+                try:
+                    with open(patch_file_path, 'r') as f:
+                        raw_completion = f.read()
+                    print(f"✅ Reloaded {len(raw_completion)} characters")
+                except Exception as e:
+                    print(f"❌ Error reloading file: {e}")
+                continue
+            
+            if choice == "0":
                 print("\n👋 Goodbye!")
                 break
             
@@ -280,13 +387,6 @@ def main():
             print(f"\n{'='*70}")
             print(f"TESTING: {instance_id}")
             print("="*70)
-            
-            # Get raw completion
-            raw_completion = get_multiline_input("\n📝 Paste the raw LLM completion:")
-            
-            if not raw_completion:
-                print("⏭️  Skipped (empty input)")
-                continue
             
             # Test the patch
             success = test_patch_on_instance(instance_id, raw_completion)
