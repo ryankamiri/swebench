@@ -42401,55 +42401,9 @@ wandb logging for tracking experiments and results.</p>
 <span class="normal">114</span>
 <span class="normal">115</span>
 <span class="normal">116</span>
-<span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_instance_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">Dict</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Log individual instance result."""</span>
-    <span class="n">instance_id</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"instance_id"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)</span>
-    <span class="n">status</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">,</span> <span class="s2">"UNKNOWN"</span><span class="p">)</span>
-
-    <span class="c1"># Update metrics</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"completed_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">"PASSED"</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"passed_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">"FAILED"</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"failed_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"error_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-
-    <span class="c1"># Log to wandb</span>
-    <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
-        <span class="s2">"instance_id"</span><span class="p">:</span> <span class="n">instance_id</span><span class="p">,</span>
-        <span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
-        <span class="s2">"completed_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"completed_instances"</span><span class="p">],</span>
-        <span class="s2">"passed_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"passed_instances"</span><span class="p">],</span>
-        <span class="s2">"failed_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"failed_instances"</span><span class="p">],</span>
-        <span class="s2">"error_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"error_instances"</span><span class="p">],</span>
-        <span class="s2">"pass_rate"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"passed_instances"</span><span class="p">]</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"completed_instances"</span><span class="p">]),</span>
-    <span class="p">})</span>
-</code></pre></div></td></tr></tbody></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h6 id="swebench.harness.run_evaluation_with_wandb.WandbLogger.log_final_results" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">log_final_results</span>
-
-
-</h6>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">log_final_results</span><span class="p">(</span><span class="n">reports</span><span class="p">:</span> <span class="n"><span title="typing.List">List</span></span><span class="p">[</span><span class="n"><span title="typing.Dict">Dict</span></span><span class="p">])</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Log final evaluation results.</p>
-
-
-            <details class="quote">
-              <summary>Source code in <code>swebench/harness/run_evaluation_with_wandb.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">119</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
 <span class="normal">120</span>
 <span class="normal">121</span>
 <span class="normal">122</span>
@@ -42477,7 +42431,129 @@ wandb logging for tracking experiments and results.</p>
 <span class="normal">144</span>
 <span class="normal">145</span>
 <span class="normal">146</span>
-<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_final_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reports</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]):</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_instance_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">Dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Log individual instance result."""</span>
+    <span class="n">instance_id</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"instance_id"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">,</span> <span class="s2">"UNKNOWN"</span><span class="p">)</span>
+
+    <span class="c1"># Update metrics</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"completed_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">"PASSED"</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"passed_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">"FAILED"</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"failed_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"error_instances"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># Extract detailed test information</span>
+    <span class="n">test_results</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"test_results"</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">FAIL_TO_PASS</span> <span class="o">=</span> <span class="n">test_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"FAIL_TO_PASS"</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">PASS_TO_PASS</span> <span class="o">=</span> <span class="n">test_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PASS_TO_PASS"</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="c1"># Extract patch application info</span>
+    <span class="n">patch_applied</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"patch_applied"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">patch_apply_error</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"patch_apply_error"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+
+    <span class="c1"># Log to wandb</span>
+    <span class="n">log_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"instance_id"</span><span class="p">:</span> <span class="n">instance_id</span><span class="p">,</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+        <span class="s2">"completed_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"completed_instances"</span><span class="p">],</span>
+        <span class="s2">"passed_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"passed_instances"</span><span class="p">],</span>
+        <span class="s2">"failed_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"failed_instances"</span><span class="p">],</span>
+        <span class="s2">"error_instances"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"error_instances"</span><span class="p">],</span>
+        <span class="s2">"pass_rate"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"passed_instances"</span><span class="p">]</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s2">"completed_instances"</span><span class="p">]),</span>
+
+        <span class="c1"># Patch application status</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/patch_applied"</span><span class="p">:</span> <span class="n">patch_applied</span><span class="p">,</span>
+
+        <span class="c1"># Test results</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/fail_to_pass_count"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">FAIL_TO_PASS</span><span class="p">)</span> <span class="k">if</span> <span class="n">FAIL_TO_PASS</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/pass_to_pass_count"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">PASS_TO_PASS</span><span class="p">)</span> <span class="k">if</span> <span class="n">PASS_TO_PASS</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/total_tests"</span><span class="p">:</span> <span class="n">test_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"num_tests"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/failed_tests"</span><span class="p">:</span> <span class="n">test_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"num_failed"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/passed_tests"</span><span class="p">:</span> <span class="n">test_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"num_passed"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">log_data</span><span class="p">)</span>
+
+    <span class="c1"># Log patch apply error if exists</span>
+    <span class="k">if</span> <span class="n">patch_apply_error</span><span class="p">:</span>
+        <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/patch_apply_error"</span><span class="p">:</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Html</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;pre&gt;</span><span class="si">{</span><span class="n">patch_apply_error</span><span class="si">}</span><span class="s2">&lt;/pre&gt;"</span><span class="p">)</span>
+        <span class="p">})</span>
+
+    <span class="c1"># Log test details</span>
+    <span class="k">if</span> <span class="n">FAIL_TO_PASS</span><span class="p">:</span>
+        <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/fail_to_pass_tests"</span><span class="p">:</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Html</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;pre&gt;</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">FAIL_TO_PASS</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/pre&gt;"</span><span class="p">)</span>
+        <span class="p">})</span>
+
+    <span class="k">if</span> <span class="n">PASS_TO_PASS</span><span class="p">:</span>
+        <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/pass_to_pass_tests"</span><span class="p">:</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Html</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;pre&gt;</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">PASS_TO_PASS</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/pre&gt;"</span><span class="p">)</span>
+        <span class="p">})</span>
+</code></pre></div></td></tr></tbody></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h6 id="swebench.harness.run_evaluation_with_wandb.WandbLogger.log_final_results" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">log_final_results</span>
+
+
+</h6>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">log_final_results</span><span class="p">(</span><span class="n">reports</span><span class="p">:</span> <span class="n"><span title="typing.List">List</span></span><span class="p">[</span><span class="n"><span title="typing.Dict">Dict</span></span><span class="p">])</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Log final evaluation results.</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>swebench/harness/run_evaluation_with_wandb.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_final_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reports</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">"""Log final evaluation results."""</span>
     <span class="c1"># Calculate final metrics</span>
     <span class="n">total_instances</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">reports</span><span class="p">)</span>
@@ -42530,9 +42606,9 @@ wandb logging for tracking experiments and results.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_with_wandb.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Finish the wandb run."""</span>
     <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
 </code></pre></div></td></tr></tbody></table></div>
@@ -42830,61 +42906,7 @@ wandb logging for tracking experiments and results.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_with_wandb.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span>
-<span class="normal">198</span>
-<span class="normal">199</span>
-<span class="normal">200</span>
-<span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span>
-<span class="normal">204</span>
-<span class="normal">205</span>
-<span class="normal">206</span>
-<span class="normal">207</span>
-<span class="normal">208</span>
-<span class="normal">209</span>
-<span class="normal">210</span>
-<span class="normal">211</span>
-<span class="normal">212</span>
-<span class="normal">213</span>
-<span class="normal">214</span>
-<span class="normal">215</span>
-<span class="normal">216</span>
-<span class="normal">217</span>
-<span class="normal">218</span>
-<span class="normal">219</span>
-<span class="normal">220</span>
-<span class="normal">221</span>
-<span class="normal">222</span>
-<span class="normal">223</span>
-<span class="normal">224</span>
-<span class="normal">225</span>
-<span class="normal">226</span>
-<span class="normal">227</span>
-<span class="normal">228</span>
-<span class="normal">229</span>
-<span class="normal">230</span>
-<span class="normal">231</span>
-<span class="normal">232</span>
-<span class="normal">233</span>
-<span class="normal">234</span>
-<span class="normal">235</span>
-<span class="normal">236</span>
-<span class="normal">237</span>
-<span class="normal">238</span>
-<span class="normal">239</span>
-<span class="normal">240</span>
-<span class="normal">241</span>
-<span class="normal">242</span>
-<span class="normal">243</span>
-<span class="normal">244</span>
-<span class="normal">245</span>
-<span class="normal">246</span>
-<span class="normal">247</span>
-<span class="normal">248</span>
-<span class="normal">249</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">249</span>
 <span class="normal">250</span>
 <span class="normal">251</span>
 <span class="normal">252</span>
@@ -43001,7 +43023,61 @@ wandb logging for tracking experiments and results.</p>
 <span class="normal">363</span>
 <span class="normal">364</span>
 <span class="normal">365</span>
-<span class="normal">366</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_instances_with_wandb</span><span class="p">(</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_instances_with_wandb</span><span class="p">(</span>
     <span class="n">predictions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span>
     <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
@@ -43197,61 +43273,7 @@ wandb logging for tracking experiments and results.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/harness/run_evaluation_with_wandb.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">369</span>
-<span class="normal">370</span>
-<span class="normal">371</span>
-<span class="normal">372</span>
-<span class="normal">373</span>
-<span class="normal">374</span>
-<span class="normal">375</span>
-<span class="normal">376</span>
-<span class="normal">377</span>
-<span class="normal">378</span>
-<span class="normal">379</span>
-<span class="normal">380</span>
-<span class="normal">381</span>
-<span class="normal">382</span>
-<span class="normal">383</span>
-<span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span>
-<span class="normal">389</span>
-<span class="normal">390</span>
-<span class="normal">391</span>
-<span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span>
-<span class="normal">395</span>
-<span class="normal">396</span>
-<span class="normal">397</span>
-<span class="normal">398</span>
-<span class="normal">399</span>
-<span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span>
-<span class="normal">405</span>
-<span class="normal">406</span>
-<span class="normal">407</span>
-<span class="normal">408</span>
-<span class="normal">409</span>
-<span class="normal">410</span>
-<span class="normal">411</span>
-<span class="normal">412</span>
-<span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span>
-<span class="normal">419</span>
-<span class="normal">420</span>
-<span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">423</span>
 <span class="normal">424</span>
 <span class="normal">425</span>
 <span class="normal">426</span>
@@ -43392,7 +43414,61 @@ wandb logging for tracking experiments and results.</p>
 <span class="normal">561</span>
 <span class="normal">562</span>
 <span class="normal">563</span>
-<span class="normal">564</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Main entry point for wandb-enabled evaluation."""</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">"Run SWE-bench evaluation with wandb logging"</span><span class="p">,</span>
