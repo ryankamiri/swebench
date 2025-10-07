@@ -166,12 +166,13 @@ class QwenInference:
         """Remove README sections from the text to reduce noise."""
         import re
         
-        # Pattern to match README sections
-        # Matches: [start of README.*] ... [end of README.*]
-        readme_pattern = r'\[start of README[^\]]*\].*?\[end of README[^\]]*\]'
+        # Pattern to match any README file sections with any extension
+        # Matches: [start of README], [start of README.md], [start of README.rst], [start of readme.txt], etc.
+        # Case-insensitive to catch readme, README, ReadMe, etc.
+        readme_pattern = r'\[start of [Rr][Ee][Aa][Dd][Mm][Ee][^\]]*\].*?\[end of [Rr][Ee][Aa][Dd][Mm][Ee][^\]]*\]'
         
-        # Remove README sections (case-insensitive, dotall for multiline)
-        cleaned_text = re.sub(readme_pattern, '', text, flags=re.DOTALL | re.IGNORECASE)
+        # Remove README sections (dotall for multiline)
+        cleaned_text = re.sub(readme_pattern, '', text, flags=re.DOTALL)
         
         return cleaned_text
     
