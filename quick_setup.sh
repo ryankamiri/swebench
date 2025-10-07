@@ -31,10 +31,13 @@ conda activate swebench-qwen
 
 # Install PyTorch with CUDA
 echo "🔥 Installing PyTorch with CUDA support..."
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# For CUDA 12.x, use the cu121 index
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Install core dependencies
 echo "📚 Installing core dependencies..."
+# Fix importlib-metadata for Python 3.9 compatibility
+pip install --upgrade importlib-metadata
 pip install transformers>=4.30.0
 pip install datasets>=2.0.0
 pip install accelerate
@@ -51,7 +54,14 @@ pip install -e .
 # Install additional dependencies
 echo "⚡ Installing additional dependencies..."
 pip install git+https://github.com/huggingface/transformers.git
-pip install flash-attn --no-build-isolation
+
+# Install flash-attn compatible with CUDA 12.x
+echo "🔥 Installing flash-attn (CUDA 12.x compatible)..."
+pip install flash-attn --no-build-isolation || {
+    echo "⚠️  Standard flash-attn installation failed. Trying alternative..."
+    pip install ninja packaging
+    pip install flash-attn==2.7.4 --no-build-isolation || echo "⚠️  flash-attn installation failed (this is optional)"
+}
 
 echo ""
 echo "✅ Setup complete!"
