@@ -16105,10 +16105,7 @@ on SWE-bench tasks.</p>
 <span class="normal">324</span>
 <span class="normal">325</span>
 <span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
-<span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_inference_on_dataset</span><span class="p">(</span>
+<span class="normal">327</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_inference_on_dataset</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -16164,11 +16161,14 @@ on SWE-bench tasks.</p>
                 <span class="n">hints_text</span><span class="o">=</span><span class="n">hints_text</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="c1"># Log raw and cleaned completions</span>
+            <span class="c1"># Log raw and cleaned completions to console/file</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">] Raw completion length: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'raw_completion_length'</span><span class="p">]</span><span class="si">}</span><span class="s2"> chars"</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">] Cleaned patch length: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'patch_length'</span><span class="p">]</span><span class="si">}</span><span class="s2"> chars"</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">] Raw completion preview: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'raw_completion'</span><span class="p">]</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">] Cleaned patch preview: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'cleaned_completion'</span><span class="p">]</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">] Raw completion:</span><span class="se">\n</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'raw_completion'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">] Cleaned patch:</span><span class="se">\n</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'cleaned_completion'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+            <span class="c1"># Check if patch is valid (has diff markers)</span>
+            <span class="n">has_diff_markers</span> <span class="o">=</span> <span class="s1">'---'</span> <span class="ow">in</span> <span class="n">patch</span> <span class="ow">or</span> <span class="s1">'+++'</span> <span class="ow">in</span> <span class="n">patch</span> <span class="ow">or</span> <span class="s1">'@@'</span> <span class="ow">in</span> <span class="n">patch</span>
 
             <span class="n">prediction</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">"instance_id"</span><span class="p">:</span> <span class="n">instance_id</span><span class="p">,</span>
@@ -16179,21 +16179,15 @@ on SWE-bench tasks.</p>
 
             <span class="n">predictions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
 
-            <span class="c1"># Log to wandb</span>
+            <span class="c1"># Log metrics to wandb (not full completions)</span>
             <span class="k">if</span> <span class="n">wandb</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
-                    <span class="s2">"instance_id"</span><span class="p">:</span> <span class="n">instance_id</span><span class="p">,</span>
-                    <span class="s2">"patch_length"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">patch</span><span class="p">),</span>
-                    <span class="s2">"raw_completion_length"</span><span class="p">:</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">'raw_completion_length'</span><span class="p">],</span>
-                    <span class="s2">"prompt_length"</span><span class="p">:</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">'prompt_length'</span><span class="p">],</span>
-                    <span class="s2">"progress"</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-                    <span class="s2">"total_instances"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
-                <span class="p">})</span>
-
-                <span class="c1"># Log detailed completion info as artifact</span>
-                <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
-                    <span class="sa">f</span><span class="s2">"completions/</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/raw"</span><span class="p">:</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Html</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;pre&gt;</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'raw_completion'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/pre&gt;"</span><span class="p">),</span>
-                    <span class="sa">f</span><span class="s2">"completions/</span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">/cleaned"</span><span class="p">:</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Html</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;pre&gt;</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'cleaned_completion'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/pre&gt;"</span><span class="p">),</span>
+                    <span class="s2">"inference/patch_length"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">patch</span><span class="p">),</span>
+                    <span class="s2">"inference/raw_completion_length"</span><span class="p">:</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">'raw_completion_length'</span><span class="p">],</span>
+                    <span class="s2">"inference/prompt_length"</span><span class="p">:</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">'prompt_length'</span><span class="p">],</span>
+                    <span class="s2">"inference/has_diff_markers"</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">has_diff_markers</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"inference/patch_empty"</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"inference/progress"</span><span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
                 <span class="p">})</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -16249,7 +16243,10 @@ on SWE-bench tasks.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/inference/qwen_inference.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">333</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
 <span class="normal">334</span>
 <span class="normal">335</span>
 <span class="normal">336</span>
@@ -16307,10 +16304,7 @@ on SWE-bench tasks.</p>
 <span class="normal">388</span>
 <span class="normal">389</span>
 <span class="normal">390</span>
-<span class="normal">391</span>
-<span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="normal">391</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Main function for running inference."""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 
