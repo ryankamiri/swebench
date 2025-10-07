@@ -156,42 +156,43 @@ def build_image(
         
         logger.info(f"Pulling pre-built Docker image: docker://{docker_image}")
         
-        # Use workspace directory for images (matching working agent's approach)
-        # Priority: use existing workspace if available, otherwise create in build dir
-        workspace_image_dir = Path("/projects/llpr/amiri.ry/dev/swe_workspace/apptainer_images")
-        if workspace_image_dir.parent.exists():
-            image_cache_dir = workspace_image_dir
-        else:
-            # Fallback to build directory
-            image_cache_dir = (build_dir.parent.parent / "apptainer_images")
+        # Set up environment for Apptainer - respect existing environment variables
+        env = os.environ.copy()
         
-        image_cache_dir.mkdir(parents=True, exist_ok=True)
-        image_cache_dir = image_cache_dir.resolve()
+        # Get cache directory from environment or use default fallback
+        cachedir = env.get('APPTAINER_CACHEDIR') or env.get('SINGULARITY_CACHEDIR')
+        if not cachedir:
+            # Only set default if not already configured in environment
+            cachedir = str(Path("logs/build_images/apptainer_images").resolve())
+            env['APPTAINER_CACHEDIR'] = cachedir
+            env['SINGULARITY_CACHEDIR'] = cachedir
+            logger.info(f"APPTAINER_CACHEDIR not set in environment, using default: {cachedir}")
+        else:
+            logger.info(f"Using APPTAINER_CACHEDIR from environment: {cachedir}")
+        
+        # Get temp directory from environment or use default fallback
+        tmpdir = env.get('APPTAINER_TMPDIR') or env.get('SINGULARITY_TMPDIR')
+        if not tmpdir:
+            # Only set default if not already configured in environment
+            tmpdir = str((Path.cwd() / "tmp" / "apptainer").resolve())
+            env['APPTAINER_TMPDIR'] = tmpdir
+            env['SINGULARITY_TMPDIR'] = tmpdir
+            logger.info(f"APPTAINER_TMPDIR not set in environment, using default: {tmpdir}")
+        else:
+            logger.info(f"Using APPTAINER_TMPDIR from environment: {tmpdir}")
+        
+        # Ensure directories exist
+        os.makedirs(cachedir, exist_ok=True)
+        os.makedirs(tmpdir, exist_ok=True)
         
         # Output SIF file path
         sif_name = f"{image_name.replace(':', '_').replace('/', '_')}.sif"
-        output_path = (image_cache_dir / sif_name).resolve()
+        output_path = Path(cachedir) / sif_name
         
         # Check if already exists
         if output_path.exists() and not nocache:
             logger.info(f"Image already exists at: {output_path}")
             return
-        
-        # Set up environment for Apptainer (use configured directories)
-        env = os.environ.copy()
-        tmpdir = env.get('APPTAINER_TMPDIR', env.get('SINGULARITY_TMPDIR'))
-        cachedir = env.get('APPTAINER_CACHEDIR')
-        
-        # Ensure directories exist
-        if tmpdir:
-            os.makedirs(tmpdir, exist_ok=True)
-            env['APPTAINER_TMPDIR'] = tmpdir
-            env['SINGULARITY_TMPDIR'] = tmpdir
-        
-        if cachedir:
-            os.makedirs(cachedir, exist_ok=True)
-            env['APPTAINER_CACHEDIR'] = cachedir
-            env['SINGULARITY_CACHEDIR'] = cachedir
         
         # Pull the Docker image using Apptainer
         pull_cmd = ["apptainer", "pull", str(output_path), f"docker://{docker_image}"]

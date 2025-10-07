@@ -168,18 +168,24 @@ class ApptainerImages:
             possible_paths = []
             
             # 1. Check environment-configured cache (MOST IMPORTANT)
-            cachedir = os.environ.get('APPTAINER_CACHEDIR')
+            cachedir = os.environ.get('APPTAINER_CACHEDIR') or os.environ.get('SINGULARITY_CACHEDIR')
             if cachedir:
-                possible_paths.append(Path(cachedir) / sif_name)
+                possible_paths.append(Path(cachedir).resolve() / sif_name)
             
             # 2. Check build directory's apptainer_images (where our build_image saves)
-            possible_paths.append(Path("logs/build_images/apptainer_images") / sif_name)
+            possible_paths.append(Path("logs/build_images/apptainer_images").resolve() / sif_name)
+            
+            # 3. Check current directory fallback
+            possible_paths.append((Path.cwd() / "apptainer_images" / sif_name).resolve())
             
             for path in possible_paths:
                 if path.exists():
+                    logging.info(f"Found image {image_name} at: {path}")
                     return ApptainerImage(self.client, str(path), [image_name])
             
             # Image not found in any location
+            logging.error(f"Image {image_name} not found")
+            logging.error(f"Searched in: {[str(p) for p in possible_paths]}")
             raise ImageNotFound(f"Image {image_name} not found in: {[str(p) for p in possible_paths]}")
             
         except ImageNotFound:
