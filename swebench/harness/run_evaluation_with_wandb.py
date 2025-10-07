@@ -112,47 +112,43 @@ class WandbLogger:
         
         # Extract patch application info
         patch_applied = report.get("patch_applied", False)
-        patch_apply_error = report.get("patch_apply_error", "")
         
-        # Log to wandb
+        # Calculate test success rates
+        f2p_count = len(FAIL_TO_PASS) if FAIL_TO_PASS else 0
+        p2p_count = len(PASS_TO_PASS) if PASS_TO_PASS else 0
+        total_tests = test_results.get("num_tests", 0)
+        passed_tests = test_results.get("num_passed", 0)
+        failed_tests = test_results.get("num_failed", 0)
+        
+        # Calculate F2P success (tests that should have passed after fix)
+        f2p_success = passed_tests if f2p_count > 0 else 0
+        f2p_rate = f2p_success / f2p_count if f2p_count > 0 else 0
+        
+        # Log metrics to wandb (not full logs)
         log_data = {
-            "instance_id": instance_id,
-            "status": status,
-            "completed_instances": self.metrics["completed_instances"],
-            "passed_instances": self.metrics["passed_instances"],
-            "failed_instances": self.metrics["failed_instances"],
-            "error_instances": self.metrics["error_instances"],
-            "pass_rate": self.metrics["passed_instances"] / max(1, self.metrics["completed_instances"]),
+            # Overall metrics
+            "eval/completed_instances": self.metrics["completed_instances"],
+            "eval/passed_instances": self.metrics["passed_instances"],
+            "eval/failed_instances": self.metrics["failed_instances"],
+            "eval/error_instances": self.metrics["error_instances"],
+            "eval/pass_rate": self.metrics["passed_instances"] / max(1, self.metrics["completed_instances"]),
             
-            # Patch application status
-            f"{instance_id}/patch_applied": patch_applied,
+            # Per-instance metrics
+            "eval/patch_applied": 1 if patch_applied else 0,
+            "eval/patch_success_rate": self.metrics["passed_instances"] / max(1, self.metrics["completed_instances"]),
             
-            # Test results
-            f"{instance_id}/fail_to_pass_count": len(FAIL_TO_PASS) if FAIL_TO_PASS else 0,
-            f"{instance_id}/pass_to_pass_count": len(PASS_TO_PASS) if PASS_TO_PASS else 0,
-            f"{instance_id}/total_tests": test_results.get("num_tests", 0),
-            f"{instance_id}/failed_tests": test_results.get("num_failed", 0),
-            f"{instance_id}/passed_tests": test_results.get("num_passed", 0),
+            # Test metrics
+            "eval/f2p_test_count": f2p_count,
+            "eval/p2p_test_count": p2p_count,
+            "eval/f2p_success_count": f2p_success,
+            "eval/f2p_success_rate": f2p_rate,
+            "eval/total_tests": total_tests,
+            "eval/tests_passed": passed_tests,
+            "eval/tests_failed": failed_tests,
+            "eval/test_pass_rate": passed_tests / total_tests if total_tests > 0 else 0,
         }
         
         wandb.log(log_data)
-        
-        # Log patch apply error if exists
-        if patch_apply_error:
-            wandb.log({
-                f"{instance_id}/patch_apply_error": wandb.Html(f"<pre>{patch_apply_error}</pre>")
-            })
-        
-        # Log test details
-        if FAIL_TO_PASS:
-            wandb.log({
-                f"{instance_id}/fail_to_pass_tests": wandb.Html(f"<pre>{json.dumps(FAIL_TO_PASS, indent=2)}</pre>")
-            })
-        
-        if PASS_TO_PASS:
-            wandb.log({
-                f"{instance_id}/pass_to_pass_tests": wandb.Html(f"<pre>{json.dumps(PASS_TO_PASS, indent=2)}</pre>")
-            })
     
     def log_final_results(self, reports: List[Dict]):
         """Log final evaluation results."""
@@ -549,7 +545,7 @@ def main():
     
     # Filter dataset if specific instance IDs are provided
     if args.instance_ids:
-        dataset = [inst for inst in dataset if inst.instance_id in args.instance_ids]
+        dataset = [inst for inst in dataset if (inst.get('instance_id') if isinstance(inst, dict) else inst.instance_id) in args.instance_ids]
         print(f"Filtered to {len(dataset)} instances")
 
     # Load predictions
@@ -557,15 +553,17 @@ def main():
         print("Using gold predictions")
         predictions = [
             {
-                KEY_INSTANCE_ID: inst.instance_id,
+                KEY_INSTANCE_ID: inst.get('instance_id') if isinstance(inst, dict) else inst.instance_id,
                 KEY_MODEL: "gold",
-                KEY_PREDICTION: inst.patch,
+                KEY_PREDICTION: inst.get('patch') if isinstance(inst, dict) else inst.patch,
             }
             for inst in dataset
         ]
     else:
         print(f"Loading predictions from: {args.predictions_path}")
-        predictions = get_predictions_from_file(args.predictions_path)
+        # Determine split from dataset size (dev is smaller, test is larger)
+        split = "test" if len(dataset) > 10 else "dev"
+        predictions = get_predictions_from_file(args.predictions_path, args.dataset_name, split)
 
     # Generate run ID if not provided
     if args.run_id is None:

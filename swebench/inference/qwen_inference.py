@@ -276,11 +276,14 @@ Please generate a patch that fixes this problem. The patch should be in unified 
                     hints_text=hints_text,
                 )
                 
-                # Log raw and cleaned completions
+                # Log raw and cleaned completions to console/file
                 logger.info(f"[{instance_id}] Raw completion length: {metadata['raw_completion_length']} chars")
                 logger.info(f"[{instance_id}] Cleaned patch length: {metadata['patch_length']} chars")
-                logger.info(f"[{instance_id}] Raw completion preview: {metadata['raw_completion']}...")
-                logger.info(f"[{instance_id}] Cleaned patch preview: {metadata['cleaned_completion']}...")
+                logger.info(f"[{instance_id}] Raw completion:\n{metadata['raw_completion']}")
+                logger.info(f"[{instance_id}] Cleaned patch:\n{metadata['cleaned_completion']}")
+                
+                # Check if patch is valid (has diff markers)
+                has_diff_markers = '---' in patch or '+++' in patch or '@@' in patch
                 
                 prediction = {
                     "instance_id": instance_id,
@@ -291,21 +294,15 @@ Please generate a patch that fixes this problem. The patch should be in unified 
                 
                 predictions.append(prediction)
                 
-                # Log to wandb
+                # Log metrics to wandb (not full completions)
                 if wandb.run is not None:
                     wandb.log({
-                        "instance_id": instance_id,
-                        "patch_length": len(patch),
-                        "raw_completion_length": metadata['raw_completion_length'],
-                        "prompt_length": metadata['prompt_length'],
-                        "progress": i + 1,
-                        "total_instances": len(dataset),
-                    })
-                    
-                    # Log detailed completion info as artifact
-                    wandb.log({
-                        f"completions/{instance_id}/raw": wandb.Html(f"<pre>{metadata['raw_completion']}</pre>"),
-                        f"completions/{instance_id}/cleaned": wandb.Html(f"<pre>{metadata['cleaned_completion']}</pre>"),
+                        "inference/patch_length": len(patch),
+                        "inference/raw_completion_length": metadata['raw_completion_length'],
+                        "inference/prompt_length": metadata['prompt_length'],
+                        "inference/has_diff_markers": 1 if has_diff_markers else 0,
+                        "inference/patch_empty": 1 if len(patch) == 0 else 0,
+                        "inference/progress": (i + 1) / len(dataset),
                     })
                 
             except Exception as e:
