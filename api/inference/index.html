@@ -15293,8 +15293,7 @@ on SWE-bench tasks.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>swebench/inference/qwen_inference.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
-<span class="normal">25</span>
+                    <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">25</span>
 <span class="normal">26</span>
 <span class="normal">27</span>
 <span class="normal">28</span>
@@ -15332,7 +15331,8 @@ on SWE-bench tasks.</p>
 <span class="normal">60</span>
 <span class="normal">61</span>
 <span class="normal">62</span>
-<span class="normal">63</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">63</span>
+<span class="normal">64</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Qwen/Qwen2.5-Coder-7B"</span><span class="p">,</span>
     <span class="n">device_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"auto"</span><span class="p">,</span>
@@ -15750,8 +15750,7 @@ on SWE-bench tasks.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/inference/qwen_inference.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">100</span>
-<span class="normal">101</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
 <span class="normal">102</span>
 <span class="normal">103</span>
 <span class="normal">104</span>
@@ -15812,7 +15811,8 @@ on SWE-bench tasks.</p>
 <span class="normal">159</span>
 <span class="normal">160</span>
 <span class="normal">161</span>
-<span class="normal">162</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_patch</span><span class="p">(</span>
+<span class="normal">162</span>
+<span class="normal">163</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_patch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">problem_statement</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">repo_content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -16001,8 +16001,7 @@ on SWE-bench tasks.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/inference/qwen_inference.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">223</span>
-<span class="normal">224</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">224</span>
 <span class="normal">225</span>
 <span class="normal">226</span>
 <span class="normal">227</span>
@@ -16100,12 +16099,7 @@ on SWE-bench tasks.</p>
 <span class="normal">319</span>
 <span class="normal">320</span>
 <span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span>
-<span class="normal">324</span>
-<span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_inference_on_dataset</span><span class="p">(</span>
+<span class="normal">322</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_inference_on_dataset</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -16181,14 +16175,8 @@ on SWE-bench tasks.</p>
 
             <span class="c1"># Log metrics to wandb (not full completions)</span>
             <span class="k">if</span> <span class="n">wandb</span><span class="o">.</span><span class="n">run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
-                    <span class="s2">"inference/patch_length"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">patch</span><span class="p">),</span>
-                    <span class="s2">"inference/raw_completion_length"</span><span class="p">:</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">'raw_completion_length'</span><span class="p">],</span>
-                    <span class="s2">"inference/prompt_length"</span><span class="p">:</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">'prompt_length'</span><span class="p">],</span>
-                    <span class="s2">"inference/has_diff_markers"</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">has_diff_markers</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
-                    <span class="s2">"inference/patch_empty"</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
-                    <span class="s2">"inference/progress"</span><span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
-                <span class="p">})</span>
+                <span class="c1"># Note: wandb logger is managed externally in main()</span>
+                <span class="k">pass</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error processing </span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -16243,7 +16231,12 @@ on SWE-bench tasks.</p>
 
             <details class="quote">
               <summary>Source code in <code>swebench/inference/qwen_inference.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">330</span>
+              <div class="highlight"><table class="highlighttable"><tbody><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
 <span class="normal">331</span>
 <span class="normal">332</span>
 <span class="normal">333</span>
@@ -16301,10 +16294,7 @@ on SWE-bench tasks.</p>
 <span class="normal">385</span>
 <span class="normal">386</span>
 <span class="normal">387</span>
-<span class="normal">388</span>
-<span class="normal">389</span>
-<span class="normal">390</span>
-<span class="normal">391</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Main function for running inference."""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 
@@ -16320,14 +16310,15 @@ on SWE-bench tasks.</p>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
-    <span class="c1"># Initialize wandb</span>
-    <span class="n">wandb</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+    <span class="c1"># Initialize wandb logger</span>
+    <span class="n">wandb_logger</span> <span class="o">=</span> <span class="n">InferenceLogger</span><span class="p">(</span>
         <span class="n">project</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">wandb_project</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">wandb_run_name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"qwen-</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">dataset_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">run_name</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">wandb_run_name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"qwen-</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">dataset_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">config</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">"model_name"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
             <span class="s2">"dataset_name"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">,</span>
             <span class="s2">"use_quantization"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">use_quantization</span><span class="p">,</span>
+            <span class="s2">"max_instances"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">max_instances</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="p">)</span>
 
@@ -16357,12 +16348,13 @@ on SWE-bench tasks.</p>
     <span class="p">)</span>
 
     <span class="c1"># Log final results</span>
-    <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">({</span>
-        <span class="s2">"total_predictions"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span>
-        <span class="s2">"successful_predictions"</span><span class="p">:</span> <span class="nb">len</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span> <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">"model_patch"</span><span class="p">]]),</span>
-    <span class="p">})</span>
+    <span class="n">successful</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span> <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">"model_patch"</span><span class="p">]])</span>
+    <span class="n">wandb_logger</span><span class="o">.</span><span class="n">log_final_inference</span><span class="p">(</span>
+        <span class="n">total_predictions</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span>
+        <span class="n">successful_predictions</span><span class="o">=</span><span class="n">successful</span>
+    <span class="p">)</span>
 
-    <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+    <span class="n">wandb_logger</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Generated </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span><span class="si">}</span><span class="s2"> predictions"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saved to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
