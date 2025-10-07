@@ -303,6 +303,60 @@ class WorkspaceEvaluator:
                         
                     except Exception as read_error:
                         print(f"   ❌ Error reading patch file: {read_error}\n")
+                    
+                    # Show what git was looking for vs what's actually in the file
+                    print(f"\n   🔍 Analyzing context mismatch...")
+                    print(f"   {'-'*60}")
+                    
+                    # Extract the target file from the patch
+                    target_file = None
+                    for line in patch_lines:
+                        if line.startswith('--- a/'):
+                            target_file = line[6:]  # Remove '--- a/'
+                            break
+                    
+                    if target_file:
+                        target_path = repo_dir / target_file
+                        if target_path.exists():
+                            print(f"   Target file: {target_file}")
+                            print(f"   File exists: ✅")
+                            
+                            # Get the line number from the hunk header
+                            hunk_line = None
+                            for line in patch_lines:
+                                if line.startswith('@@'):
+                                    # Extract starting line number
+                                    match = re.search(r'@@ -(\d+)', line)
+                                    if match:
+                                        hunk_line = int(match.group(1))
+                                    break
+                            
+                            if hunk_line:
+                                print(f"   Patch expects changes around line: {hunk_line}")
+                                
+                                # Read actual file content around that line
+                                with open(target_path, 'r') as f:
+                                    actual_lines = f.readlines()
+                                
+                                print(f"   Actual file has {len(actual_lines)} lines")
+                                print(f"\n   📄 Actual content around line {hunk_line}:")
+                                print(f"   {'-'*60}")
+                                
+                                start = max(0, hunk_line - 5)
+                                end = min(len(actual_lines), hunk_line + 10)
+                                
+                                for i in range(start, end):
+                                    line_num = i + 1
+                                    line_content = actual_lines[i].rstrip('\n')
+                                    marker = ">>>" if line_num == hunk_line else "   "
+                                    print(f"   {marker} {line_num:4d}: {repr(line_content)}")
+                                
+                                print(f"   {'-'*60}")
+                        else:
+                            print(f"   Target file: {target_file}")
+                            print(f"   File exists: ❌")
+                    
+                    print()
             
             os.remove(patch_file)
             return result.returncode == 0
