@@ -139,23 +139,6 @@ def build_image(
             f"Building Apptainer image {image_name} in {build_dir} with platform {platform}"
         )
         
-        # STRATEGY: Pull Docker image directly instead of building from .def
-        # This avoids NFS xattr issues entirely and matches the working agent's approach
-        
-        # Extract the base Docker image from the Dockerfile
-        docker_image = "ubuntu:22.04"  # default
-        for line in dockerfile.split('\n'):
-            if line.strip().upper().startswith('FROM '):
-                # Extract base image, remove --platform flag
-                base_image = line.strip().split(' ', 1)[1]
-                if '--platform=' in base_image:
-                    parts = base_image.split()
-                    base_image = ' '.join([p for p in parts if not p.startswith('--platform=')])
-                docker_image = base_image.strip()
-                break
-        
-        logger.info(f"Pulling pre-built Docker image: docker://{docker_image}")
-        
         # Set up environment for Apptainer - respect existing environment variables
         env = os.environ.copy()
         
@@ -194,33 +177,86 @@ def build_image(
             logger.info(f"Image already exists at: {output_path}")
             return
         
-        # Pull the Docker image using Apptainer
-        pull_cmd = ["apptainer", "pull", str(output_path), f"docker://{docker_image}"]
+        # Determine build strategy based on whether this is a base or env image
+        # Extract the base image from the Dockerfile
+        base_image = "ubuntu:22.04"  # default
+        for line in dockerfile.split('\n'):
+            if line.strip().upper().startswith('FROM '):
+                # Extract base image, remove --platform flag
+                base_image = line.strip().split(' ', 1)[1]
+                if '--platform=' in base_image:
+                    parts = base_image.split()
+                    base_image = ' '.join([p for p in parts if not p.startswith('--platform=')])
+                base_image = base_image.strip()
+                break
         
-        logger.info(f"Running: {' '.join(pull_cmd)}")
-        logger.info(f"Output path: {output_path}")
-        logger.info(f"APPTAINER_TMPDIR: {tmpdir}")
-        logger.info(f"APPTAINER_CACHEDIR: {cachedir}")
-        
-        result = subprocess.run(
-            pull_cmd,
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=1800  # 30 minute timeout for large images
-        )
-        
-        logger.info(f"Pull stdout: {result.stdout}")
-        if result.stderr:
-            logger.info(f"Pull stderr: {result.stderr}")
-        logger.info(f"Pull return code: {result.returncode}")
-        
-        if result.returncode != 0:
-            logger.error(f"Pull failed!")
-            raise BuildError(f"Apptainer pull failed: {result.stderr}", "")
-        
-        logger.info(f"Successfully pulled image to: {output_path}")
-        logger.info("Note: Setup scripts will be run during container execution")
+        # Check if this is building from a local SWE-bench base image
+        if base_image.startswith('sweb.'):
+            # This is an env image building on top of a base image
+            # Use apptainer build with the definition file
+            logger.info(f"Building env image on top of local base: {base_image}")
+            
+            # Convert Dockerfile to Apptainer definition file
+            definition_file = convert_dockerfile_to_apptainer(dockerfile, build_dir)
+            logger.info(f"Generated Apptainer definition file at {definition_file}")
+            logger.info(f"Definition content:\n{definition_file.read_text()}")
+            
+            # Build using the definition file
+            build_cmd = ["apptainer", "build", str(output_path), str(definition_file)]
+            
+            logger.info(f"Running: {' '.join(build_cmd)}")
+            logger.info(f"Output path: {output_path}")
+            logger.info(f"APPTAINER_TMPDIR: {tmpdir}")
+            logger.info(f"APPTAINER_CACHEDIR: {cachedir}")
+            
+            result = subprocess.run(
+                build_cmd,
+                capture_output=True,
+                text=True,
+                env=env,
+                cwd=build_dir,  # Run in build directory so relative paths work
+                timeout=1800  # 30 minute timeout for large images
+            )
+            
+            logger.info(f"Build stdout: {result.stdout}")
+            if result.stderr:
+                logger.info(f"Build stderr: {result.stderr}")
+            logger.info(f"Build return code: {result.returncode}")
+            
+            if result.returncode != 0:
+                logger.error(f"Build failed!")
+                raise BuildError(f"Apptainer build failed: {result.stderr}", "")
+            
+            logger.info(f"Successfully built image to: {output_path}")
+        else:
+            # This is a base image - pull directly from Docker Hub
+            logger.info(f"Pulling base image from Docker Hub: docker://{base_image}")
+            
+            pull_cmd = ["apptainer", "pull", str(output_path), f"docker://{base_image}"]
+            
+            logger.info(f"Running: {' '.join(pull_cmd)}")
+            logger.info(f"Output path: {output_path}")
+            logger.info(f"APPTAINER_TMPDIR: {tmpdir}")
+            logger.info(f"APPTAINER_CACHEDIR: {cachedir}")
+            
+            result = subprocess.run(
+                pull_cmd,
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=1800  # 30 minute timeout for large images
+            )
+            
+            logger.info(f"Pull stdout: {result.stdout}")
+            if result.stderr:
+                logger.info(f"Pull stderr: {result.stderr}")
+            logger.info(f"Pull return code: {result.returncode}")
+            
+            if result.returncode != 0:
+                logger.error(f"Pull failed!")
+                raise BuildError(f"Apptainer pull failed: {result.stderr}", "")
+            
+            logger.info(f"Successfully pulled image to: {output_path}")
         
         
     except BuildError as e:
@@ -270,7 +306,22 @@ def convert_dockerfile_to_apptainer(dockerfile: str, build_dir: Path) -> Path:
             if '--platform=' in base_image:
                 parts = base_image.split()
                 base_image = ' '.join([p for p in parts if not p.startswith('--platform=')])
-            definition_content = f"Bootstrap: docker\nFrom: {base_image}\n\n"
+            
+            # Check if this is a local SWE-bench image (not a Docker Hub image)
+            if base_image.startswith('sweb.'):
+                # This is a local SWE-bench image - use localimage bootstrap
+                # Find the SIF file for this base image
+                cachedir = os.environ.get('APPTAINER_CACHEDIR') or os.environ.get('SINGULARITY_CACHEDIR')
+                if not cachedir:
+                    cachedir = str(Path("logs/build_images/apptainer_images").resolve())
+                
+                sif_name = f"{base_image.replace(':', '_').replace('/', '_')}.sif"
+                sif_path = Path(cachedir) / sif_name
+                
+                definition_content = f"Bootstrap: localimage\nFrom: {sif_path}\n\n"
+            else:
+                # Regular Docker Hub image
+                definition_content = f"Bootstrap: docker\nFrom: {base_image}\n\n"
             
         elif line.upper().startswith('RUN '):
             # Collect RUN commands
