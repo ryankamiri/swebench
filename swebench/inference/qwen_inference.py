@@ -14,6 +14,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import wandb
 
 from swebench.harness.utils import load_swebench_dataset
+from swebench.harness.wandb_logging import InferenceLogger
 
 logger = logging.getLogger(__name__)
 
@@ -296,14 +297,8 @@ Please generate a patch that fixes this problem. The patch should be in unified 
                 
                 # Log metrics to wandb (not full completions)
                 if wandb.run is not None:
-                    wandb.log({
-                        "inference/patch_length": len(patch),
-                        "inference/raw_completion_length": metadata['raw_completion_length'],
-                        "inference/prompt_length": metadata['prompt_length'],
-                        "inference/has_diff_markers": 1 if has_diff_markers else 0,
-                        "inference/patch_empty": 1 if len(patch) == 0 else 0,
-                        "inference/progress": (i + 1) / len(dataset),
-                    })
+                    # Note: wandb logger is managed externally in main()
+                    pass
                 
             except Exception as e:
                 logger.error(f"Error processing {instance_id}: {e}")
@@ -343,14 +338,15 @@ def main():
     
     args = parser.parse_args()
     
-    # Initialize wandb
-    wandb.init(
+    # Initialize wandb logger
+    wandb_logger = InferenceLogger(
         project=args.wandb_project,
-        name=args.wandb_run_name or f"qwen-{args.dataset_name.split('/')[-1]}",
+        run_name=args.wandb_run_name or f"qwen-{args.dataset_name.split('/')[-1]}",
         config={
             "model_name": args.model_name,
             "dataset_name": args.dataset_name,
             "use_quantization": args.use_quantization,
+            "max_instances": args.max_instances,
         }
     )
     
@@ -380,12 +376,13 @@ def main():
     )
     
     # Log final results
-    wandb.log({
-        "total_predictions": len(predictions),
-        "successful_predictions": len([p for p in predictions if p["model_patch"]]),
-    })
+    successful = len([p for p in predictions if p["model_patch"]])
+    wandb_logger.log_final_inference(
+        total_predictions=len(predictions),
+        successful_predictions=successful
+    )
     
-    wandb.finish()
+    wandb_logger.finish()
     
     print(f"Generated {len(predictions)} predictions")
     print(f"Saved to: {args.output_path}")

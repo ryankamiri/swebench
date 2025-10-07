@@ -10,7 +10,9 @@ from __future__ import annotations
 import json
 import platform
 import threading
+import time
 import traceback
+from typing import Dict, List, Optional
 
 if platform.system() == "Linux":
     import resource
@@ -18,6 +20,8 @@ if platform.system() == "Linux":
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from pathlib import Path, PurePosixPath
 from tqdm.auto import tqdm
+
+from swebench.harness.wandb_logging import EvaluationLogger
 
 from swebench.harness.constants import (
     APPLY_PATCH_FAIL,
@@ -267,6 +271,8 @@ def run_instances(
     cache_level: str = "env",
     clean: bool = False,
     rewrite_reports: bool = False,
+    wandb_project: str = "swebench-evaluation",
+    wandb_run_name: Optional[str] = None,
 ) -> list[dict]:
     """
     Run evaluation on a list of predictions using Apptainer.
@@ -294,6 +300,29 @@ def run_instances(
         resource.setrlimit(resource.RLIMIT_NOFILE, (open_file_limit, open_file_limit))
     
     client = ApptainerClient()
+    
+    # Initialize wandb logger
+    wandb_config = {
+        "max_workers": max_workers,
+        "timeout": timeout,
+        "rm_image": rm_image,
+        "force_rebuild": force_rebuild,
+        "namespace": namespace,
+        "instance_image_tag": instance_image_tag,
+        "env_image_tag": env_image_tag,
+        "cache_level": cache_level,
+        "clean": clean,
+        "rewrite_reports": rewrite_reports,
+        "dataset_size": len(dataset),
+        "predictions_size": len(predictions),
+        "container_runtime": "apptainer",
+    }
+    
+    wandb_logger = EvaluationLogger(
+        project=wandb_project,
+        run_name=wandb_run_name,
+        config=wandb_config,
+    )
 
     existing_images = list_images(client)
 
@@ -362,15 +391,28 @@ def run_instances(
                 )
             )
 
-    # Run evaluations in parallel
-    successful, failed = run_threadpool(run_instance, args_list, max_workers)
+    # Run evaluations in parallel with wandb logging
+    reports = []
+    with tqdm(total=len(args_list), desc="Evaluating instances") as pbar:
+        def run_with_logging(*args):
+            result = run_instance(*args)
+            wandb_logger.log_instance_evaluation(result)
+            pbar.update(1)
+            return result
+        
+        successful, failed = run_threadpool(run_with_logging, args_list, max_workers)
+        reports = successful + failed
 
     # Clean up images based on cache level
     if clean:
         clean_images(client, existing_images, cache_level, clean)
 
+    # Log final results to wandb
+    wandb_logger.log_final_evaluation(reports)
+    wandb_logger.finish()
+
     print(f"Evaluation completed: {len(successful)} successful, {len(failed)} failed")
-    return successful + failed
+    return reports
 
 
 def main():
@@ -479,6 +521,20 @@ def main():
         default=None,
         help="Specific instance IDs to evaluate",
     )
+    
+    parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default="swebench-evaluation",
+        help="Wandb project name",
+    )
+    
+    parser.add_argument(
+        "--wandb_run_name",
+        type=str,
+        default=None,
+        help="Wandb run name",
+    )
 
     args = parser.parse_args()
 
@@ -513,6 +569,9 @@ def main():
 
     # Run evaluation
     print(f"Starting evaluation with run_id: {args.run_id}")
+    print(f"Wandb project: {args.wandb_project}")
+    print(f"Wandb run name: {args.wandb_run_name}")
+    
     reports = run_instances(
         predictions=predictions,
         dataset=dataset,
@@ -526,6 +585,8 @@ def main():
         cache_level=args.cache_level,
         clean=args.clean,
         rewrite_reports=args.rewrite_reports,
+        wandb_project=args.wandb_project,
+        wandb_run_name=args.wandb_run_name,
     )
 
     # Generate final report

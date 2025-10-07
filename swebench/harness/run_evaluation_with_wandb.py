@@ -21,7 +21,8 @@ if platform.system() == "Linux":
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from tqdm.auto import tqdm
-import wandb
+
+from swebench.harness.wandb_logging import EvaluationLogger
 
 from swebench.harness.constants import (
     KEY_INSTANCE_ID,
@@ -52,194 +53,9 @@ from swebench.harness.run_evaluation import run_instance
 import docker
 
 
-class WandbLogger:
-    """Wandb logging utility for SWE-bench evaluations."""
-    
-    def __init__(
-        self,
-        project: str = "swebench-evaluation",
-        run_name: Optional[str] = None,
-        config: Optional[Dict] = None,
-    ):
-        """
-        Initialize wandb logger.
-        
-        Args:
-            project: Wandb project name
-            run_name: Run name (auto-generated if None)
-            config: Configuration dictionary
-        """
-        self.project = project
-        self.run_name = run_name
-        self.config = config or {}
-        
-        # Initialize wandb run
-        wandb.init(
-            project=self.project,
-            name=self.run_name,
-            config=self.config,
-            tags=["swebench", "evaluation"],
-        )
-        
-        # Track metrics
-        self.metrics = {
-            "total_instances": 0,
-            "completed_instances": 0,
-            "passed_instances": 0,
-            "failed_instances": 0,
-            "error_instances": 0,
-            "start_time": time.time(),
-        }
-    
-    def log_instance_result(self, report: Dict):
-        """Log individual instance result."""
-        instance_id = report.get("instance_id", "unknown")
-        status = report.get("status", "UNKNOWN")
-        
-        # Update metrics
-        self.metrics["completed_instances"] += 1
-        if status == "PASSED":
-            self.metrics["passed_instances"] += 1
-        elif status == "FAILED":
-            self.metrics["failed_instances"] += 1
-        else:
-            self.metrics["error_instances"] += 1
-        
-        # Extract detailed test information
-        test_results = report.get("test_results", {})
-        FAIL_TO_PASS = test_results.get("FAIL_TO_PASS", [])
-        PASS_TO_PASS = test_results.get("PASS_TO_PASS", [])
-        
-        # Extract patch application info
-        patch_applied = report.get("patch_applied", False)
-        
-        # Calculate test success rates
-        f2p_count = len(FAIL_TO_PASS) if FAIL_TO_PASS else 0
-        p2p_count = len(PASS_TO_PASS) if PASS_TO_PASS else 0
-        total_tests = test_results.get("num_tests", 0)
-        passed_tests = test_results.get("num_passed", 0)
-        failed_tests = test_results.get("num_failed", 0)
-        
-        # Calculate F2P success (tests that should have passed after fix)
-        f2p_success = passed_tests if f2p_count > 0 else 0
-        f2p_rate = f2p_success / f2p_count if f2p_count > 0 else 0
-        
-        # Log metrics to wandb (not full logs)
-        log_data = {
-            # Overall metrics
-            "eval/completed_instances": self.metrics["completed_instances"],
-            "eval/passed_instances": self.metrics["passed_instances"],
-            "eval/failed_instances": self.metrics["failed_instances"],
-            "eval/error_instances": self.metrics["error_instances"],
-            "eval/pass_rate": self.metrics["passed_instances"] / max(1, self.metrics["completed_instances"]),
-            
-            # Per-instance metrics
-            "eval/patch_applied": 1 if patch_applied else 0,
-            "eval/patch_success_rate": self.metrics["passed_instances"] / max(1, self.metrics["completed_instances"]),
-            
-            # Test metrics
-            "eval/f2p_test_count": f2p_count,
-            "eval/p2p_test_count": p2p_count,
-            "eval/f2p_success_count": f2p_success,
-            "eval/f2p_success_rate": f2p_rate,
-            "eval/total_tests": total_tests,
-            "eval/tests_passed": passed_tests,
-            "eval/tests_failed": failed_tests,
-            "eval/test_pass_rate": passed_tests / total_tests if total_tests > 0 else 0,
-        }
-        
-        wandb.log(log_data)
-    
-    def log_final_results(self, reports: List[Dict]):
-        """Log final evaluation results."""
-        # Calculate final metrics
-        total_instances = len(reports)
-        passed_instances = len([r for r in reports if r.get("status") == "PASSED"])
-        failed_instances = len([r for r in reports if r.get("status") == "FAILED"])
-        error_instances = len([r for r in reports if r.get("status") not in ["PASSED", "FAILED"]])
-        
-        pass_rate = passed_instances / total_instances if total_instances > 0 else 0
-        duration = time.time() - self.metrics["start_time"]
-        
-        # Log final metrics
-        final_metrics = {
-            "final/total_instances": total_instances,
-            "final/passed_instances": passed_instances,
-            "final/failed_instances": failed_instances,
-            "final/error_instances": error_instances,
-            "final/pass_rate": pass_rate,
-            "final/duration_seconds": duration,
-            "final/duration_minutes": duration / 60,
-        }
-        
-        wandb.log(final_metrics)
-        
-        # Create summary table
-        self._create_summary_table(reports)
-        
-        # Log detailed results
-        self._log_detailed_results(reports)
-    
-    def _create_summary_table(self, reports: List[Dict]):
-        """Create a summary table in wandb."""
-        table_data = []
-        for report in reports:
-            test_results = report.get("test_results", {})
-            FAIL_TO_PASS = test_results.get("FAIL_TO_PASS", [])
-            PASS_TO_PASS = test_results.get("PASS_TO_PASS", [])
-            
-            table_data.append([
-                report.get("instance_id", "unknown"),
-                report.get("status", "UNKNOWN"),
-                "✓" if report.get("patch_applied", False) else "✗",
-                len(FAIL_TO_PASS) if FAIL_TO_PASS else 0,
-                len(PASS_TO_PASS) if PASS_TO_PASS else 0,
-                test_results.get("num_tests", 0),
-                test_results.get("num_failed", 0),
-                test_results.get("num_passed", 0),
-            ])
-        
-        table = wandb.Table(
-            columns=[
-                "Instance ID", 
-                "Status", 
-                "Patch Applied",
-                "F2P Tests",
-                "P2P Tests",
-                "Total Tests", 
-                "Failed Tests", 
-                "Passed Tests"
-            ],
-            data=table_data
-        )
-        
-        wandb.log({"evaluation_results": table})
-    
-    def _log_detailed_results(self, reports: List[Dict]):
-        """Log detailed results for analysis."""
-        # Group by status
-        status_counts = {}
-        for report in reports:
-            status = report.get("status", "UNKNOWN")
-            status_counts[status] = status_counts.get(status, 0) + 1
-        
-        # Log status distribution
-        wandb.log({"status_distribution": status_counts})
-        
-        # Log error analysis
-        error_reports = [r for r in reports if r.get("status") not in ["PASSED", "FAILED"]]
-        if error_reports:
-            error_types = {}
-            for report in error_reports:
-                error = report.get("error", "Unknown error")
-                error_type = error.split(":")[0] if ":" in error else error
-                error_types[error_type] = error_types.get(error_type, 0) + 1
-            
-            wandb.log({"error_types": error_types})
-    
-    def finish(self):
-        """Finish the wandb run."""
-        wandb.finish()
+# WandbLogger is now imported from wandb_logging module
+# Keeping this as an alias for compatibility
+WandbLogger = EvaluationLogger
 
 
 def run_instances_with_wandb(
@@ -393,7 +209,7 @@ def run_instances_with_wandb(
         with tqdm(total=len(args_list), desc="Evaluating instances") as pbar:
             def run_with_logging(*args):
                 result = run_instance(*args)
-                wandb_logger.log_instance_result(result)
+                wandb_logger.log_instance_evaluation(result)
                 pbar.update(1)
                 return result
             
@@ -406,7 +222,7 @@ def run_instances_with_wandb(
             clean_images(client, existing_images, cache_level, clean)
         
         # Log final results
-        wandb_logger.log_final_results(reports)
+        wandb_logger.log_final_evaluation(reports)
         
         print(f"Evaluation completed: {len(successful)} successful, {len(failed)} failed")
         
