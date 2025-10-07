@@ -544,7 +544,7 @@ def main():
     
     # Filter dataset if specific instance IDs are provided
     if args.instance_ids:
-        dataset = [inst for inst in dataset if inst.instance_id in args.instance_ids]
+        dataset = [inst for inst in dataset if (inst.get('instance_id') if isinstance(inst, dict) else inst.instance_id) in args.instance_ids]
         print(f"Filtered to {len(dataset)} instances")
 
     # Load predictions
@@ -552,15 +552,17 @@ def main():
         print("Using gold predictions")
         predictions = [
             {
-                KEY_INSTANCE_ID: inst.instance_id,
+                KEY_INSTANCE_ID: inst.get('instance_id') if isinstance(inst, dict) else inst.instance_id,
                 KEY_MODEL: "gold",
-                KEY_PREDICTION: inst.patch,
+                KEY_PREDICTION: inst.get('patch') if isinstance(inst, dict) else inst.patch,
             }
             for inst in dataset
         ]
     else:
         print(f"Loading predictions from: {args.predictions_path}")
-        predictions = get_predictions_from_file(args.predictions_path)
+        # Determine split from dataset size
+        split = "test" if len(dataset) > 10 else "dev"
+        predictions = get_predictions_from_file(args.predictions_path, args.dataset_name, split)
 
     # Generate run ID if not provided
     if args.run_id is None:
