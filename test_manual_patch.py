@@ -108,6 +108,12 @@ def test_patch_on_instance(instance_id: str, raw_completion: str, workspace_dir:
     print(problem_text_cleaned[:500] + "..." if len(problem_text_cleaned) > 500 else problem_text_cleaned)
     print("-" * 70)
     
+    # Show raw completion
+    print(f"\n📄 Raw LLM Completion:")
+    print("-" * 70)
+    print(raw_completion)
+    print("-" * 70)
+    
     # Extract patch from raw completion
     print(f"\n🔧 Extracting patch from raw completion...")
     patch = extract_patch(raw_completion)
