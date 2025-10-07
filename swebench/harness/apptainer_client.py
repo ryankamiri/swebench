@@ -161,24 +161,29 @@ class ApptainerImages:
     def get(self, image_name: str) -> ApptainerImage:
         """Get an image by name."""
         try:
-            # Check if the image exists
-            result = subprocess.run(
-                ["apptainer", "inspect", image_name],
-                capture_output=True,
-                text=True
-            )
+            # Check if the image exists as a .sif file
+            sif_name = f"{image_name.replace(':', '_').replace('/', '_')}.sif"
             
-            if result.returncode != 0:
-                raise ImageNotFound(f"Image {image_name} not found")
+            # Only check locations configured by environment or created by our build process
+            possible_paths = []
             
-            # Parse the image info
-            image_info = json.loads(result.stdout)
-            image_id = image_info.get("attributes", {}).get("id", image_name)
+            # 1. Check environment-configured cache (MOST IMPORTANT)
+            cachedir = os.environ.get('APPTAINER_CACHEDIR')
+            if cachedir:
+                possible_paths.append(Path(cachedir) / sif_name)
             
-            return ApptainerImage(self.client, image_id, [image_name])
+            # 2. Check build directory's apptainer_images (where our build_image saves)
+            possible_paths.append(Path("logs/build_images/apptainer_images") / sif_name)
             
-        except subprocess.CalledProcessError:
-            raise ImageNotFound(f"Image {image_name} not found")
+            for path in possible_paths:
+                if path.exists():
+                    return ApptainerImage(self.client, str(path), [image_name])
+            
+            # Image not found in any location
+            raise ImageNotFound(f"Image {image_name} not found in: {[str(p) for p in possible_paths]}")
+            
+        except ImageNotFound:
+            raise
         except Exception as e:
             raise ApptainerError(f"Failed to get image {image_name}: {e}")
     
@@ -290,22 +295,24 @@ class ApptainerClient:
         if image_name in self._image_cache:
             return self._image_cache[image_name]
         
-        # Look for SIF file in cache
-        cache_dir = Path.home() / ".apptainer" / "cache" / "shub"
-        sif_file = cache_dir / f"{image_name}.sif"
+        # Look for SIF or sandbox
+        sif_name = f"{image_name.replace(':', '_').replace('/', '_')}.sif"
         
-        if sif_file.exists():
-            self._image_cache[image_name] = str(sif_file)
-            return str(sif_file)
+        # Check only environment-configured and build directories
+        cache_locations = []
         
-        # If not found, try to pull it
-        try:
-            self.images.pull(image_name)
-            if sif_file.exists():
-                self._image_cache[image_name] = str(sif_file)
-                return str(sif_file)
-        except Exception:
-            pass
+        # 1. Environment-configured cache (priority)
+        env_cache = os.environ.get('APPTAINER_CACHEDIR')
+        if env_cache:
+            cache_locations.append(Path(env_cache) / sif_name)
+        
+        # 2. Build directory cache
+        cache_locations.append(Path("logs/build_images/apptainer_images") / sif_name)
+        
+        for location in cache_locations:
+            if location.exists():
+                self._image_cache[image_name] = str(location)
+                return str(location)
         
         # Fallback to the image name (might be a local path)
         return image_name
