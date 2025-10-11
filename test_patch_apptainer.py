@@ -22,8 +22,9 @@ from datasets import load_dataset
 # Add swebench to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from swebench.harness.test_spec import make_test_spec, TestSpec
-from swebench.harness.run_evaluation import run_instances
+from swebench.harness.test_spec.test_spec import make_test_spec, TestSpec
+from swebench.harness.run_evaluation_apptainer import run_instance
+from swebench.harness.apptainer_client import ApptainerClient
 from swebench.harness.constants import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
@@ -67,18 +68,16 @@ def test_patch(
     patch: str,
     dataset_name: str = "princeton-nlp/SWE-bench_Lite",
     workspace_dir: str = "./test_workspace",
-    container_engine: str = "apptainer",
     timeout: int = 600,
 ):
     """
-    Test a patch on a single SWE-bench instance.
+    Test a patch on a single SWE-bench instance using Apptainer.
     
     Args:
         instance_id: SWE-bench instance ID (e.g., "astropy__astropy-12907")
         patch: Patch content (unified diff format)
         dataset_name: HuggingFace dataset name
         workspace_dir: Directory for test workspace
-        container_engine: "apptainer" or "docker"
         timeout: Test execution timeout in seconds
         
     Returns:
@@ -126,33 +125,28 @@ def test_patch(
             "error": f"Test spec creation failed: {e}"
         }
     
-    # Run evaluation
-    print(f"🚀 Running evaluation with {container_engine}...")
+    # Run evaluation with Apptainer
+    print(f"🚀 Running evaluation with Apptainer...")
     print(f"   Workspace: {workspace_dir}")
     print(f"   Timeout: {timeout}s")
     print()
     
     try:
-        # Run the evaluation
-        results = run_instances(
-            predictions=[prediction],
-            instances=[instance],
-            cache_level="instance",
-            clean=False,
-            force_rebuild=False,
-            max_workers=1,
-            run_id="test_run",
-            timeout=timeout,
-            log_dir=Path(workspace_dir) / "logs",
+        # Create Apptainer client
+        client = ApptainerClient(
+            image_cache_dir=Path(workspace_dir) / "apptainer_images"
         )
         
-        if not results:
-            return {
-                "success": False,
-                "error": "No results returned"
-            }
-        
-        result = results[0]
+        # Run the single instance
+        result = run_instance(
+            test_spec=test_spec,
+            pred=prediction,
+            rm_image=False,
+            force_rebuild=False,
+            client=client,
+            run_id="test_run",
+            timeout=timeout,
+        )
         
         # Print results
         print("\n" + "=" * 80)
@@ -229,13 +223,6 @@ def main():
         help="Workspace directory"
     )
     parser.add_argument(
-        "--container",
-        type=str,
-        choices=["apptainer", "docker"],
-        default="apptainer",
-        help="Container engine to use"
-    )
-    parser.add_argument(
         "--timeout",
         type=int,
         default=600,
@@ -257,7 +244,6 @@ def main():
         patch=patch,
         dataset_name=args.dataset,
         workspace_dir=args.workspace,
-        container_engine=args.container,
         timeout=args.timeout,
     )
     
