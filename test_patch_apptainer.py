@@ -69,6 +69,7 @@ def test_patch(
     dataset_name: str = "princeton-nlp/SWE-bench_Lite",
     workspace_dir: str = "./test_workspace",
     timeout: int = 600,
+    force_rebuild: bool = False,
 ):
     """
     Test a patch on a single SWE-bench instance using Apptainer.
@@ -79,6 +80,7 @@ def test_patch(
         dataset_name: HuggingFace dataset name
         workspace_dir: Directory for test workspace
         timeout: Test execution timeout in seconds
+        force_rebuild: Force rebuild images even if they exist
         
     Returns:
         dict with test results
@@ -131,6 +133,7 @@ def test_patch(
     print(f"🚀 Running evaluation with Apptainer...")
     print(f"   Workspace: {workspace_dir}")
     print(f"   Timeout: {timeout}s")
+    print(f"   Force rebuild: {force_rebuild}")
     print()
     
     # Create workspace directory if it doesn't exist
@@ -150,11 +153,16 @@ def test_patch(
         client = ApptainerClient()
         
         # Run the single instance
+        print(f"⚙️  Building/checking container images...")
+        if force_rebuild:
+            print(f"   Force rebuild enabled - will rebuild all images")
+        print()
+        
         result = run_instance(
             test_spec=test_spec,
             pred=prediction,
             rm_image=False,
-            force_rebuild=False,
+            force_rebuild=force_rebuild,
             client=client,
             run_id="test_run",
             timeout=timeout,
@@ -243,6 +251,11 @@ def main():
         default=600,
         help="Test execution timeout in seconds"
     )
+    parser.add_argument(
+        "--force-rebuild",
+        action="store_true",
+        help="Force rebuild container images even if they exist"
+    )
     
     args = parser.parse_args()
     
@@ -260,6 +273,7 @@ def main():
         dataset_name=args.dataset,
         workspace_dir=args.workspace,
         timeout=args.timeout,
+        force_rebuild=args.force_rebuild,
     )
     
     # Exit with appropriate code
