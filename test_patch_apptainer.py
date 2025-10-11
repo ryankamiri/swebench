@@ -133,11 +133,21 @@ def test_patch(
     print(f"   Timeout: {timeout}s")
     print()
     
+    # Create workspace directory if it doesn't exist
+    workspace_path = Path(workspace_dir).resolve()
+    workspace_path.mkdir(parents=True, exist_ok=True)
+    
+    # Save current directory and change to workspace
+    original_dir = os.getcwd()
+    
     try:
-        # Create Apptainer client
-        client = ApptainerClient(
-            image_cache_dir=Path(workspace_dir) / "apptainer_images"
-        )
+        # Change to workspace directory so SWE-bench creates logs/images there
+        os.chdir(workspace_path)
+        print(f"   Working directory: {workspace_path}")
+        print()
+        
+        # Create Apptainer client (no arguments needed)
+        client = ApptainerClient()
         
         # Run the single instance
         result = run_instance(
@@ -194,6 +204,9 @@ def test_patch(
             "success": False,
             "error": str(e)
         }
+    finally:
+        # Always return to original directory
+        os.chdir(original_dir)
 
 
 def main():
