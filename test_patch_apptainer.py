@@ -116,10 +116,12 @@ def test_patch(
         print(f"✅ Test spec created")
         print(f"   Instance ID: {test_spec.instance_id}")
         print(f"   Repo: {test_spec.repo}")
-        print(f"   Environment: {test_spec.env_name}")
+        print(f"   Version: {test_spec.version}")
         print()
     except Exception as e:
         print(f"❌ Error creating test spec: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "success": False,
             "error": f"Test spec creation failed: {e}"
